@@ -36,16 +36,14 @@ void readfile_into_buf(char *filename, char *buf)
     }
 }
 
-int cgi_handler(int connfd)
+int cgi_handler(int connfd, Request *request)
 {
     // cgi env variables
-    ssize_t content_length;
     char *param,
          *query_string,
          *request_method,
          *script_name,
-         *remote_host,
-         *remote_addr;
+         *remote_host;
     FILE *file_ptr;
 
     pid_t pid;
@@ -55,13 +53,14 @@ int cgi_handler(int connfd)
 
         char buf[BUF_SIZE], params[BUF_SIZE];
         Read(connfd, buf, BUF_SIZE);
-        content_length = strlen(buf);
+        request->content_length = strlen(buf);
         fprintf(stderr, "%s\n", buf);
-        fprintf(stderr, "\n==================== PRINT PARSE RESULT ==================\n");
-        fprintf(stderr, "Content-Length=%ld\n", content_length);
+        fprintf(stderr, "\n==================== PARSE RESULT ======================\n");
+        fprintf(stderr, "Content-Length=%ld\n", request->content_length);
+        parse_request_method(buf, request);
         parse_params(buf, params);
-        fprintf(stderr, "parse params=%s\n", params);
-        fprintf(stderr, "==============================END=========================\n");
+        fprintf(stderr, "params=%s\n", params);
+        fprintf(stderr, "============================= END ========================\n");
 
         char root[50] = "../www/";
 
@@ -73,6 +72,8 @@ int cgi_handler(int connfd)
 
                 strcat(root, params);
                 fprintf(stderr, "root=%s", root);
+
+                // TODO setenv
 
                 if (execl(root, "", NULL) < 0) {
                     perror("execl");
@@ -90,17 +91,18 @@ int cgi_handler(int connfd)
                 write_html_header(connfd);
                 Write(connfd, buf, strlen(buf));
 
-                fclose(file_ptr);
-
                 break;
 
             default:
-                // normal file open and write to the socket
-                file_ptr = fopen(root, "r");
-                if (file_ptr < 0) {
-                    log_err("fopen failed");
-                }
-                //fread
+                /* request with other extentions */
+                strcat(root, params);
+                fprintf(stderr, "html root=%s", root);
+
+                /* read file into buf */
+                readfile_into_buf(root, buf);
+
+                write_html_header(connfd);
+                Write(connfd, buf, strlen(buf));
         }
 
         exit(EXIT_SUCCESS);

@@ -18,6 +18,7 @@
 #include <errno.h>
 #include <pthread.h>
 #include "dbg.h"
+#include "request.h"
 
 #define TRUE        1
 #define FALSE       0
@@ -84,9 +85,10 @@ void env_set();
 void signal_init();
 
 // cgi
-int cgi_handler(int connfd);
+int cgi_handler(int connfd, Request *request);
 
 // parse
+void parse_request_method(char *buf, Request *request);
 void parse_params(char *buf, char *req);
 void parse_query_string();
 int parse_extension(char *filename);

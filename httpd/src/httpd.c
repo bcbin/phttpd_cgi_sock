@@ -1,4 +1,4 @@
-#include "src/unp.h"
+#include "unp.h"
 
 int main(int argc, const char *argv[])
 {
@@ -36,7 +36,9 @@ int main(int argc, const char *argv[])
 
         if (pid == 0) {      /* Child */
 
-            cgi_handler(connfd);
+            Request *request = Malloc(sizeof(request));
+            strcpy(request->remote_addr, inet_ntoa(cliaddr.sin_addr));
+            cgi_handler(connfd, request);
 
             exit(EXIT_SUCCESS);
 

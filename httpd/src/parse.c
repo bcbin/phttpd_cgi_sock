@@ -1,11 +1,20 @@
 #include "unp.h"
 
+/* parse request method into request struct */
+
+void parse_request_method(char *buf, Request *request)
+{
+    char *r;
+    r = strtok(buf, " ");
+    strcpy(request->request_method, r);
+    fprintf(stderr, "request method=%s\n", request->request_method);
+}
+
 /* parse request paramaters */
 
 void parse_params(char *buf, char *params)
 {
     char *r;
-    strtok(buf, " ");
     r = strtok(NULL, " ");
     strncpy(params, r+1, strlen(r)-1);
 }
@@ -20,14 +29,13 @@ void parse_query_string()
 
 int parse_extension(char *filename)
 {
-    fprintf(stderr, "parse_extension, %s\n", filename);
     const char *last_dot = strrchr(filename, '.');
 
     if (strcmp(last_dot+1, "cgi") == 0) {
-        fprintf(stderr, "cgi\n");
+        if (DEBUG) fprintf(stderr, "cgi\n");
         return CGI;
     } else if (strcmp(last_dot+1, "html") == 0) {
-        fprintf(stderr, "html\n");
+        if (DEBUG) fprintf(stderr, "html\n");
         return HTML;
     }
 
