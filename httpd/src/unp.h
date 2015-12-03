@@ -45,6 +45,8 @@
 #define KWHT  "\x1B[37m"
 #define RESET "\033[0m"
 
+enum {CGI, HTML, OTHER};
+
 // socket
 int Socket(int family, int type, int protocol);
 void SetReuseSock(int listenfd);
@@ -85,7 +87,8 @@ void signal_init();
 int cgi_handler(int connfd);
 
 // parse
-void parse_requset(char *buf);
+void parse_params(char *buf, char *req);
 void parse_query_string();
+int parse_extension(char *filename);
 
 #endif
