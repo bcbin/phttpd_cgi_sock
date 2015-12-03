@@ -38,14 +38,6 @@ void readfile_into_buf(char *filename, char *buf)
 
 int cgi_handler(int connfd, Request *request)
 {
-    // cgi env variables
-    char *param,
-         *query_string,
-         *request_method,
-         *script_name,
-         *remote_host;
-    FILE *file_ptr;
-
     pid_t pid;
     pid = Fork();
 
@@ -53,12 +45,13 @@ int cgi_handler(int connfd, Request *request)
 
         char buf[BUF_SIZE], params[BUF_SIZE];
         Read(connfd, buf, BUF_SIZE);
-        request->content_length = strlen(buf);
+        sprintf(request->content_length, "%ld", strlen(buf));
         fprintf(stderr, "%s\n", buf);
         fprintf(stderr, "\n==================== PARSE RESULT ======================\n");
-        fprintf(stderr, "Content-Length=%ld\n", request->content_length);
+        fprintf(stderr, "Content-Length=%s\n", request->content_length);
         parse_request_method(buf, request);
-        parse_params(buf, params);
+        fprintf(stderr, "request_method=%s\n", request->request_method);
+        parse_params(params, request);
         fprintf(stderr, "params=%s\n", params);
         fprintf(stderr, "============================= END ========================\n");
 
@@ -73,7 +66,13 @@ int cgi_handler(int connfd, Request *request)
                 strcat(root, params);
                 fprintf(stderr, "root=%s", root);
 
-                // TODO setenv
+                /* set cgi env */
+                //setenv2("QUERY_STRING", request->query_string);
+                setenv2("CONTENT_LENGTH", request->content_length);
+                setenv2("REQUEST_METHOD", request->request_method);
+                //setenv2("SCRIPT_NAME", request->script_name);
+                //setenv2("REMOTE_HOST", request->remote_host);
+                setenv2("REMOTE_ADDR", request->remote_addr);
 
                 if (execl(root, "", NULL) < 0) {
                     perror("execl");

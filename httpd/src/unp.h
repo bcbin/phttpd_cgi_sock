@@ -89,8 +89,7 @@ int cgi_handler(int connfd, Request *request);
 
 // parse
 void parse_request_method(char *buf, Request *request);
-void parse_params(char *buf, char *req);
-void parse_query_string();
+void parse_params(char *req, Request *request);
 int parse_extension(char *filename);
 
 #endif
