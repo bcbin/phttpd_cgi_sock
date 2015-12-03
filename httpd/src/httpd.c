@@ -1,11 +1,5 @@
 #include "src/unp.h"
 
-void client_handler(int connfd)
-{
-    dprintf(connfd, "connfd=%d", connfd);
-    Close(connfd);
-}
-
 int main(int argc, const char *argv[])
 {
     int     listenfd, connfd;
@@ -30,6 +24,8 @@ int main(int argc, const char *argv[])
     /* Listen */
     Listen(listenfd, LISTENQ);
 
+    log_info("Start listen on port %d", servaddr.sin_port);
+
     for( ; ; ) {
         clilen = sizeof(cliaddr);
         connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
@@ -38,20 +34,17 @@ int main(int argc, const char *argv[])
         pid_t pid;
         pid = Fork();
 
-        if (pid < 0) {
+        if (pid == 0) {      /* Child */
 
-            log_err("Fork failed");
-            exit(EXIT_FAILURE);
-
-        } else if (pid == 0) {      /* Child */
-
-            client_handler(connfd);
+            cgi_handler(connfd);
 
             exit(EXIT_SUCCESS);
+
         } else {                    /* Parend */
 
             Close(connfd);
-
         }
     }
+
+    /* should never go here */
 }

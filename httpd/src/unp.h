@@ -30,6 +30,7 @@
 
 #define LISTENQ             1024
 #define SERV_PORT           9877
+#define BUF_SIZE            100000
 
 #define DEBUG               0
 
@@ -79,5 +80,12 @@ void env_set();
 
 // signal
 void signal_init();
+
+// cgi
+int cgi_handler(int connfd);
+
+// parse
+void parse_requset(char *buf);
+void parse_query_string();
 
 #endif
