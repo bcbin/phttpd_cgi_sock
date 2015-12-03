@@ -1,5 +1,5 @@
 # project name (generate executable with this name)
-TARGET   = ../../www/hw3.cgi
+TARGET   = hw3.cgi
 
 CC       = gcc
 # compiling flags here
@@ -12,7 +12,7 @@ LFLAGS   = -Wall -I. -lm
 # change these to set the proper directories where each files shoould be
 SRCDIR   = src
 OBJDIR   = obj
-BINDIR   = bin
+BINDIR   = ../www/
 
 SOURCES  := $(wildcard $(SRCDIR)/*.c)
 INCLUDES := $(wildcard $(SRCDIR)/*.h)
