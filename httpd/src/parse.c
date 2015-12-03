@@ -20,8 +20,7 @@ void parse_query_string()
 
 int parse_extension(char *filename)
 {
-    fprintf(stderr, "parse filename=%s\n", filename);
-    fprintf(stderr, "ext\n");
+    fprintf(stderr, "parse_extension, %s\n", filename);
     const char *last_dot = strrchr(filename, '.');
 
     if (strcmp(last_dot+1, "cgi") == 0) {
