@@ -16,7 +16,7 @@ void parse_params(char *params, Request *request)
 {
     char *r;
     r = strtok(NULL, " ");
-    //fprintf(stderr, "r=%s", r);
+
     /* r+1 cutoff '/' */
     strncpy(params, r+1, strlen(r)-1);
     params[strlen(r)-1] = '\0';

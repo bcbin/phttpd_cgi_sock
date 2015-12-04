@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "dbg.h"
+#include "parser.h"
+#include "list.h"
 
 void html_init() {
     char *content = "<html> \
@@ -31,11 +33,17 @@ void html_end() {
 
 int main(int argc, const char *argv[])
 {
-    html_init();
+    //html_init();
 
+    // getenv
+    char *query = getenv("QUERY_STRING");
     // query string
+    List *query_list = List_create();
 
-    html_end();
+    char qs[] = "a=b&c=d&1=1";
+    parse_query_string(qs, query_list);
+
+    //html_end();
 
     return 0;
 }
