@@ -34,7 +34,7 @@ int main(int argc, const char *argv[])
         pid_t pid;
         pid = Fork();
 
-        if (pid == 0) {      /* Child */
+        if (pid == 0) {             /* child */
 
             Request *request = Malloc(sizeof(request));
             strcpy(request->remote_addr, inet_ntoa(cliaddr.sin_addr));
@@ -42,11 +42,12 @@ int main(int argc, const char *argv[])
 
             exit(EXIT_SUCCESS);
 
-        } else {                    /* Parend */
+        } else {                    /* parend */
 
             Close(connfd);
         }
     }
 
     /* should never go here */
+    exit(EXIT_FAILURE);
 }

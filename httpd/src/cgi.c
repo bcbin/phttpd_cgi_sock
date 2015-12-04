@@ -1,6 +1,8 @@
 #include "unp.h"
 
-/** helper **/
+/*-------------------------------------------------------------*/
+/*--------------------- response helper -----------------------*/
+/*-------------------------------------------------------------*/
 
 void write_cgi_header(int connfd)
 {
@@ -14,16 +16,27 @@ void write_html_header(int connfd)
     Write(connfd, content, strlen(content));
 }
 
+void write_bad_request(int connfd)
+{
+    char *response = "HTTP/1.1 400 Bad Request\nContent-Type: text/html\n\n";
+    Write(connfd, response, strlen(response));
+
+    /* print bad request body */
+    char *content = "400 Bad Request\n";
+    Write(connfd, content, strlen(content));
+}
+
 /**
  * Read whole file into a given buffer
  */
 
-void readfile_into_buf(char *filename, char *buf)
+int readfile_into_buf(char *filename, char *buf)
 {
     FILE *file_ptr = fopen(filename, "r");
 
     if (file_ptr == NULL) {
         log_err("fopen failed");
+        return -1;
     }
 
     fseek(file_ptr, 0, SEEK_END);
@@ -34,6 +47,8 @@ void readfile_into_buf(char *filename, char *buf)
     if (fsize != fread(buf, fsize, 1, file_ptr)) {
         log_err("fread failed");
     }
+
+    return 0;
 }
 
 int cgi_handler(int connfd, Request *request)
@@ -75,7 +90,7 @@ int cgi_handler(int connfd, Request *request)
                 setenv2("REMOTE_ADDR", request->remote_addr);
 
                 if (execl(root, "", NULL) < 0) {
-                    perror("execl");
+                    write_bad_request(connfd);
                 }
 
                 break;
@@ -85,7 +100,11 @@ int cgi_handler(int connfd, Request *request)
                 fprintf(stderr, "html root=%s", root);
 
                 /* read file into buf */
-                readfile_into_buf(root, buf);
+                if (readfile_into_buf(root, buf) == -1) {
+                    log_warn("html not found");
+                    write_bad_request(connfd);
+                    break;
+                }
 
                 write_html_header(connfd);
                 Write(connfd, buf, strlen(buf));
@@ -98,7 +117,11 @@ int cgi_handler(int connfd, Request *request)
                 fprintf(stderr, "html root=%s", root);
 
                 /* read file into buf */
-                readfile_into_buf(root, buf);
+                if (readfile_into_buf(root, buf) == -1) {
+                    log_warn("not found");
+                    write_bad_request(connfd);
+                    break;
+                }
 
                 write_html_header(connfd);
                 Write(connfd, buf, strlen(buf));

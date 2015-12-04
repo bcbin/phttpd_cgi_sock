@@ -61,6 +61,7 @@ void Write(int fd, void *ptr, size_t nbytes);
 int Open(const char *pathname, int oflag, mode_t mode);
 void Close(int fd);
 void Unlink(const char *pathname);
+void Execl(const char *path, char *arg);
 ssize_t Read(int fd, void *ptr, size_t nbytes);
 void *Malloc(size_t size);
 void Pipe(int *fds);

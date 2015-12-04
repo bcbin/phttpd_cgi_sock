@@ -18,7 +18,6 @@ void parse_params(char *params, Request *request)
     //fprintf(stderr, "r=%s", r);
     /* r+1 cutoff '/' */
     strncpy(params, r+1, strlen(r)-1);
-    fprintf(stderr, "params=%s", params);
 
 // TODO has bug
 //     /* save query_string into request struct */
@@ -27,7 +26,6 @@ void parse_params(char *params, Request *request)
 
     /* cutoff query_string */
     params = strtok(params, "?");
-    fprintf(stderr, "params=%s\n", params);
 }
 
 /* parse the extension with the given filename

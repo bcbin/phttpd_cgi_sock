@@ -126,6 +126,13 @@ void Unlink(char const *pathname)
     }
 }
 
+void Execl(const char *path, char *arg)
+{
+    if (execl(path, arg, NULL) < 0) {
+        perror("[ERROR] Unix - execl error.\n");
+    }
+}
+
 /* =============================================== */
 /* share memory */
 /* =============================================== */
