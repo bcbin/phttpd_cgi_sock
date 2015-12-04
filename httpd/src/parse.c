@@ -27,6 +27,8 @@ void parse_params(char *params, Request *request)
     /* get query_string */
     char *qs;
     qs = strtok(NULL, " ");
+
+    if (!qs) return;
     strncpy(request->query_string, qs, strlen(qs));
     request->query_string[strlen(qs)] = '\0';
 }
