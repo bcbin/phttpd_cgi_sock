@@ -7,6 +7,7 @@ void parse_request_method(char *buf, Request *request)
     char *r;
     r = strtok(buf, " ");
     strncpy(request->request_method, r, strlen(r));
+    request->request_method[strlen(r)] = '\0';
 }
 
 /* parse request paramaters */
@@ -18,14 +19,16 @@ void parse_params(char *params, Request *request)
     //fprintf(stderr, "r=%s", r);
     /* r+1 cutoff '/' */
     strncpy(params, r+1, strlen(r)-1);
-
-// TODO has bug
-//     /* save query_string into request struct */
-//     strcpy(request->query_string, strchr(params, '?')+1);
-//     fprintf(stderr, "qs=%s", request->query_string);
+    params[strlen(r)-1] = '\0';
 
     /* cutoff query_string */
     params = strtok(params, "?");
+
+    /* get query_string */
+    char *qs;
+    qs = strtok(NULL, " ");
+    strncpy(request->query_string, qs, strlen(qs));
+    request->query_string[strlen(qs)] = '\0';
 }
 
 /* parse the extension with the given filename

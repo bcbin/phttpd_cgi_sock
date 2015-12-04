@@ -70,7 +70,7 @@ void cgi_exec(int connfd, char *path, Request *request)
         fprintf(stderr, "path=%s", path);
 
         /* set cgi env */
-        //setenv2("QUERY_STRING", request->query_string);
+        setenv2("QUERY_STRING", request->query_string);
         setenv2("CONTENT_LENGTH", request->content_length);
         setenv2("REQUEST_METHOD", request->request_method);
         //setenv2("SCRIPT_NAME", request->script_name);
@@ -95,6 +95,7 @@ int cgi_handler(int connfd, Request *request)
 {
     char buf[BUF_SIZE], params[BUF_SIZE];
     Read(connfd, buf, BUF_SIZE);
+
     sprintf(request->content_length, "%ld", strlen(buf));
     fprintf(stderr, "%s\n", buf);
     fprintf(stderr, "\n==================== PARSE RESULT ======================\n");
@@ -103,6 +104,7 @@ int cgi_handler(int connfd, Request *request)
     fprintf(stderr, "request_method=%s\n", request->request_method);
     parse_params(params, request);
     fprintf(stderr, "params=%s\n", params);
+    fprintf(stderr, "request qs=%s\n", request->query_string);
     fprintf(stderr, "============================= END ========================\n");
 
     char root[50] = "../www/";
