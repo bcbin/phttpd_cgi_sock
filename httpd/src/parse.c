@@ -4,10 +4,11 @@
 
 void parse_request_method(char *buf, Request *request)
 {
-    char *r;
-    r = strtok(buf, " ");
-    strncpy(request->request_method, r, strlen(r));
-    request->request_method[strlen(r)] = '\0';
+    char *request_method;
+    request_method = strtok(buf, " ");
+
+    if (DEBUG)  fprintf(stderr, "request_method=%s\n", request_method);
+    setenv2("REQUEST_METHOD", request_method);
 }
 
 /* parse request paramaters */
@@ -27,10 +28,14 @@ void parse_params(char *params, Request *request)
     /* get query_string */
     char *qs;
     qs = strtok(NULL, " ");
+    if (DEBUG)
+        fprintf(stderr, "request qs=%s\n", qs);
 
     if (!qs) return;
-    strncpy(request->query_string, qs, strlen(qs));
-    request->query_string[strlen(qs)] = '\0';
+    setenv2("QUERY_STRING", qs);
+// BUG
+//     strncpy(request->query_string, qs, strlen(qs));
+//     request->query_string[1000] = '\0';
 }
 
 /* parse the extension with the given filename

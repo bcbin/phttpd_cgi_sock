@@ -66,17 +66,6 @@ void cgi_exec(int connfd, char *path, Request *request)
         Dup2(connfd, STDIN_FILENO);
         Dup2(connfd, STDOUT_FILENO);
 
-        //strcat(root, params);
-        fprintf(stderr, "path=%s", path);
-
-        /* set cgi env */
-        setenv2("QUERY_STRING", request->query_string);
-        setenv2("CONTENT_LENGTH", request->content_length);
-        setenv2("REQUEST_METHOD", request->request_method);
-        //setenv2("SCRIPT_NAME", request->script_name);
-        //setenv2("REMOTE_HOST", request->remote_host);
-        setenv2("REMOTE_ADDR", request->remote_addr);
-
         if (execl(path, "", NULL) < 0) {
             write_bad_request(connfd);
         }
@@ -96,18 +85,30 @@ int cgi_handler(int connfd, Request *request)
     char buf[BUF_SIZE], params[BUF_SIZE];
     Read(connfd, buf, BUF_SIZE);
 
-    sprintf(request->content_length, "%ld", strlen(buf));
-    fprintf(stderr, "%s\n", buf);
-    fprintf(stderr, "\n==================== PARSE RESULT ======================\n");
-    fprintf(stderr, "Content-Length=%s\n", request->content_length);
-    parse_request_method(buf, request);
-    fprintf(stderr, "request_method=%s\n", request->request_method);
-    parse_params(params, request);
-    fprintf(stderr, "params=%s\n", params);
-    fprintf(stderr, "request qs=%s\n", request->query_string);
-    fprintf(stderr, "============================= END ========================\n");
+    /* set content_length */
+    char *content_length = Malloc(sizeof(ssize_t));
+    sprintf(content_length, "%ld", strlen(buf));
+    setenv2("CONTENT_LENGTH", content_length);
 
+    /* parse request_method and remote_addr */
+    parse_request_method(buf, request);
+    //setenv2("REQUEST_METHOD", request->request_method);
+    setenv2("REMOTE_ADDR", request->remote_addr);
+
+    /* parse program path */
+    parse_params(params, request);
     char root[50] = "../www/";
+
+    if (DEBUG) {
+        //fprintf(stderr, "%s\n", buf);
+        fprintf(stderr, "\n==================== PARSE RESULT ======================\n");
+        fprintf(stderr, "Content-Length=%s\n", content_length);
+        // fprintf(stderr, "request_method=%s\n", request->request_method);
+        fprintf(stderr, "params=%s\n", params);
+        // fprintf(stderr, "request qs=%s\n", request->query_string);
+        fprintf(stderr, "============================= END ========================\n");
+    }
+
 
     switch (parse_extension(params)) {
         case CGI:
