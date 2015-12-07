@@ -34,6 +34,16 @@ void html_end() {
     printf("%s", content);
 }
 
+void print_requests_info()
+{
+    int i = 0;
+    for(i; i < 5; i++) {
+        requests[i].socket = 0;
+        printf("requests[%d] ip=%s port=%s filename=%s<br>",
+            i+1, requests[i].ip, requests[i].port, requests[i].filename);
+    }
+}
+
 int main(int argc, const char *argv[])
 {
     html_init();
@@ -46,8 +56,10 @@ int main(int argc, const char *argv[])
 
     // getenv
     char *query = getenv("QUERY_STRING");
+    //char query[] = "h1=127.0.0.1&p1=9877&f1=test1.txt&h2=192.168.1.111&p2=9878&f2=test2.txt&h3=&p3=&f3=&h4=&p4=&f4=&h5=127.0.0.1&p5=1111&f5=asdf";
 
     parse_query_string(query);
+    print_requests_info();
 
     html_end();
 
