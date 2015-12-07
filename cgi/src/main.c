@@ -3,6 +3,9 @@
 #include "dbg.h"
 #include "parser.h"
 #include "list.h"
+#include "request.h"
+
+Request requests[5];
 
 void html_init() {
     char *content = "<html> \
@@ -33,17 +36,22 @@ void html_end() {
 
 int main(int argc, const char *argv[])
 {
-    //html_init();
+    html_init();
+
+    /* init requests */
+    int i = 0;
+    for(i; i < 5; i++) {
+        requests[i].socket = 0;
+    }
 
     // getenv
     char *query = getenv("QUERY_STRING");
-    // query string
-    List *query_list = List_create();
 
-    char qs[] = "a=b&c=d&1=1";
-    parse_query_string(qs, query_list);
+    parse_query_string(query);
 
-    //html_end();
+    html_end();
+
+    // free requests
 
     return 0;
 }
