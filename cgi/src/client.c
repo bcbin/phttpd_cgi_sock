@@ -1,17 +1,18 @@
 #include "client.h"
 
 int gSc = 0;
-int recv_msg(int from);
+int recv_msg(int num, int from);
 int readline(int fd, char *ptr, int maxlen);
 
-int recv_msg(int from)
+int recv_msg(int num, int from)
 {
     char buf[3000];
     int len;
     if((len = readline(from, buf, sizeof(buf)-1)) < 0) return -1;
     buf[len] = 0;
     /* print the remote server response */
-    printf("%s",buf);   //echo input
+    //printf("%s", wrap_html(buf));   //echo input
+    write_content_at(num, wrap_html(buf), 0);
     fflush(stdout);
     return len;
 }
@@ -55,7 +56,7 @@ void new_connection(int index)
     char filepath[100];
     strcpy(filepath, "../www/test/");               // should check the path if program break
     strcat(filepath, requests[index].filename);
-    printf("filepath=%s\n", filepath);
+//     printf("filepath=%s\n", filepath);
 //     char buff[100], *dir;
 //     dir = getcwd(buff, 100);
 //     printf("dir=%s", dir);
@@ -110,6 +111,7 @@ void new_connection(int index)
 
             msg_buf[len + 1] = '\0';
             /* print command read from file */
+            write_content_at(index, wrap_html(msg_buf), 0);
             //printf("%s", msg_buf);
             fflush(stdout);
             if (write(client_fd, msg_buf, len+1) == -1) {
@@ -122,7 +124,7 @@ void new_connection(int index)
         /* close */
         if (FD_ISSET(client_fd, &readfds)) {
             int errnum;
-            errnum = recv_msg(client_fd);
+            errnum = recv_msg(index, client_fd);
             if (errnum < 0) {
                 shutdown(client_fd, 2);
                 close(client_fd);
