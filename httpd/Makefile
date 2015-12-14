@@ -2,7 +2,7 @@ TARGET   = httpd
 
 CC       = gcc
 # compiling flags here
-CFLAGS   = -Wall -I.
+CFLAGS   = -g -Wall -I.
 
 LINKER   = gcc -o
 # linking flags here

@@ -5,6 +5,7 @@
 #include "list.h"
 #include "request.h"
 #include "html.h"
+#include "client.h"
 
 Request requests[REQUEST_MAX_NUM];
 
@@ -37,7 +38,7 @@ void request_iterator()
 
 int main(int argc, const char *argv[])
 {
-    html_init();
+    //html_init();
 
     /* init requests */
     int i = 0;
@@ -46,20 +47,21 @@ int main(int argc, const char *argv[])
     }
 
     // getenv
-    char *query = getenv("QUERY_STRING");
-    //char query[] = "h1=127.0.0.1&p1=9877&f1=test1.txt&h2=192.168.1.111&p2=9878&f2=test2.txt&h3=&p3=&f3=&h4=&p4=&f4=&h5=127.0.0.1&p5=1111&f5=asdf";
+    //char *query = getenv("QUERY_STRING");
+    char query[] = "h1=127.0.0.1&p1=9878&f1=t1.txt&h2=192.168.1.111&p2=9878&f2=t2.txt&h3=&p3=&f3=&h4=&p4=&f4=&h5=127.0.0.1&p5=1111&f5=asdf";
 
     if (query) {
         parse_query_string(query);
-        print_requests_info();
+        //print_requests_info();
 
         request_iterator();
+        clients_handler();
 
     } else {
         fprintf(stderr, "Empty query string.");
     }
 
-    html_end();
+    //html_end();
 
     // free requests
 
