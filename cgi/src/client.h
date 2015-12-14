@@ -1,3 +1,6 @@
+#ifndef __CLIENT_H
+#define __CLIENT_H
+
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -13,3 +16,5 @@ extern Request requests[REQUEST_MAX_NUM];
 
 void new_connection(int index);
 void clients_handler();
+
+#endif

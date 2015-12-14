@@ -8,8 +8,9 @@ int recv_msg(int from)
 {
     char buf[3000];
     int len;
-    if((len=readline(from,buf,sizeof(buf)-1)) <0) return -1;
+    if((len = readline(from, buf, sizeof(buf)-1)) < 0) return -1;
     buf[len] = 0;
+    /* print the remote server response */
     printf("%s",buf);   //echo input
     fflush(stdout);
     return len;
@@ -51,13 +52,16 @@ void new_connection(int index)
     gSc = 0;
 
     /* open file */
-    char filepath[1000];
-    strcpy(filepath, "test/");
+    char filepath[100];
+    strcpy(filepath, "../www/test/");               // should check the path if program break
     strcat(filepath, requests[index].filename);
-    log_info("filepath=%s", filepath);
+    printf("filepath=%s\n", filepath);
+//     char buff[100], *dir;
+//     dir = getcwd(buff, 100);
+//     printf("dir=%s", dir);
     fp = fopen(filepath, "r");
     if (fp == NULL) {
-        fprintf(stderr, "open file");
+        fprintf(stdout, "open file");
         exit(EXIT_FAILURE);
     }
 
@@ -82,7 +86,7 @@ void new_connection(int index)
         exit(EXIT_FAILURE);
     }
 
-    sleep(1);
+    //sleep(1);
 
     end = 0;
     while(1) {
@@ -105,7 +109,8 @@ void new_connection(int index)
             msg_buf[len] = 10;
 
             msg_buf[len + 1] = '\0';
-            printf("%s", msg_buf);
+            /* print command read from file */
+            //printf("%s", msg_buf);
             fflush(stdout);
             if (write(client_fd, msg_buf, len+1) == -1) {
                 return;
@@ -114,7 +119,7 @@ void new_connection(int index)
             gSc = 0;
         }
 
-        /* */
+        /* close */
         if (FD_ISSET(client_fd, &readfds)) {
             int errnum;
             errnum = recv_msg(client_fd);
@@ -134,8 +139,16 @@ void new_connection(int index)
 void clients_handler()
 {
     int i = 0;
+    char buf[300];
+
     for(i = 0; i < REQUEST_MAX_NUM; i++) {
-        if (!(requests[i].ip && requests[i].port)) continue;
+        Request r = requests[i];
+        if (!(r.ip && r.port)) continue;
+        if (r.port == NULL) {
+            strcpy(buf, "wrong ip<br>");
+            write_content_at(i, buf, 0);
+        }
+
         /* connect */
         new_connection(i);
     }
