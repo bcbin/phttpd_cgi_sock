@@ -6,6 +6,8 @@
 #include <errno.h>
 #include <string.h>
 
+#define DEBUG   0
+
 #ifdef NDEBUG
 #define debug(M, ...)
 #else

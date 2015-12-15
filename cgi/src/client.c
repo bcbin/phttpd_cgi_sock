@@ -1,141 +1,175 @@
 #include "client.h"
 
-int gSc = 0;
-int recv_msg(int num, int from);
-int readline(int fd, char *ptr, int maxlen);
+#define BUFSIZE 1000
+char buf[BUFSIZE];
 
-int recv_msg(int num, int from)
-{
-    char buf[3000];
-    int len;
-    if((len = readline(from, buf, sizeof(buf)-1)) < 0) return -1;
-    buf[len] = 0;
-    /* print the remote server response */
-    //printf("%s", wrap_html(buf));   //echo input
-    write_content_at(num, wrap_html(buf), 0);
-    fflush(stdout);
-    return len;
+/* Tool Function */
+void error(char *msg) {
+    perror(msg);
+    exit(EXIT_FAILURE);
 }
 
-int readline(int fd,char *ptr,int maxlen)
+/* setup connection by given index of requests */
+void setup_connection(int index)
 {
-    int n,rc;
-    char c;
-    *ptr = 0;
-    for(n=1;n<maxlen;n++)
-    {
-        if((rc=read(fd,&c,1)) == 1)
-        {
-            *ptr++ = c;
-            if(c==' '&& *(ptr-2) =='%'){ gSc = 1; break; }
-            if(c=='\n')  break;
-        }
-        else if(rc==0)
-        {
-            if(n==1)     return(0);
-            else         break;
-        }
-        else
-            return(-1);
+    int sockfd;
+    struct sockaddr_in serveraddr;
+    struct hostent *server;
+
+    /* create the socket */
+    sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    if (sockfd < 0) {
+        error("ERROR opening socket");
     }
-    return(n);
-}
 
-void new_connection(int index)
-{
-    fd_set readfds;
-    int client_fd;
-    struct sockaddr_in client_sin;
-    char msg_buf[30000];
-    int len, SERVER_PORT, end;
-    FILE *fp;
-    struct hostent *he;
-    gSc = 0;
+    /* get server */
+    char buf[BUFSIZE];
+    server = gethostbyname(requests[index].ip);
+    if (server == NULL) {
+        fprintf(stderr,"ERROR, no such host");
 
-    /* open file */
+        // TODO: hostname
+        strcpy(buf, "wrong hostname<br />");
+        write_content_at(index, buf, 0);
+
+        return;
+    }
+
+    /* setup socket */
+    bzero((char *) &serveraddr, sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr, (char *)&serveraddr.sin_addr.s_addr, server->h_length);
+    serveraddr.sin_port = htons(atoi(requests[index].port));
+
+    /* connect: create a connection with the server */
+    if (connect(sockfd, (struct sockaddr *)&serveraddr,sizeof(serveraddr)) < 0) {
+        error("ERROR connecting");
+        return;
+    }
+
+    /* save socket */
+    requests[index].socket = sockfd;
+
+    /* open and store fp */
     char filepath[100];
     strcpy(filepath, "../www/test/");               // should check the path if program break
     strcat(filepath, requests[index].filename);
-//     printf("filepath=%s\n", filepath);
-//     char buff[100], *dir;
-//     dir = getcwd(buff, 100);
-//     printf("dir=%s", dir);
-    fp = fopen(filepath, "r");
-    if (fp == NULL) {
+    requests[index].fp = fopen(filepath, "r");
+    if (requests[index].fp == NULL) {
         fprintf(stdout, "open file");
         exit(EXIT_FAILURE);
     }
 
-    /* get host info */
-    if((he=gethostbyname(requests[index].ip)) == NULL)
-    {
-        fprintf(stderr,"host error");
-        exit(EXIT_FAILURE);
+    if (DEBUG) {
+        /* print cwd */
+        printf("filepath=%s\n", filepath);
+        char buff[100], *dir;
+        dir = getcwd(buff, 100);
+        printf("dir=%s", dir);
+
+        /* print socket, fp */
+        printf("request[%d] socket=%d, fp=%d<br>",
+                index, requests[index].socket, fileno(requests[index].fp));
+        fflush(stdout);
     }
+}
 
-    /* bind and connect */
-    SERVER_PORT = (u_short) atoi(requests[index].port);
-
-    client_fd = socket(AF_INET, SOCK_STREAM, 0);
-    bzero(&client_sin, sizeof(client_sin));
-    client_sin.sin_family = AF_INET;
-    client_sin.sin_addr = *((struct in_addr *)he->h_addr);
-    client_sin.sin_port = htons(SERVER_PORT);
-    if(connect(client_fd, (struct sockaddr *)&client_sin, sizeof(client_sin)) == -1)
-    {
-        perror("connect");
-        exit(EXIT_FAILURE);
+/* return 1 if contain prompt else return 0 */
+int contain_prompt() {
+    int i;
+    for( i=0 ; i<strlen(buf) ; i++ ) {
+        if(buf[i] == '%')   return 1;
     }
+    return 0;
+}
 
-    //sleep(1);
+void write_command_next(int index) {
 
-    end = 0;
+    int n;
+
+    /* read a line from file */
+    if(!fgets(buf, BUFSIZE, requests[index].fp)) {
+        error("fgets");
+    }
+    write_content_at(index, wrap_html(buf), 0);
+
+    if(buf[0] == '\n')  return;
+    fprintf(stderr, "%s(%d)\n", buf, (int)strlen(buf));
+    n = write(requests[index].socket, buf, strlen(buf));
+    if(n < 0)   error("ERROR writing to socket");
+}
+
+void serve_connection()
+{
+    int i, sockfd, max_s, n;
+    int activity;
+    struct timeval timeout; // second, microsecs
+    fd_set fds;
+
+    timeout.tv_sec = 2;
+    timeout.tv_usec = 500000;
+
     while(1) {
-        FD_ZERO(&readfds);
-        FD_SET(client_fd, &readfds);
-        if (end == 0) {
-            FD_SET(fileno(fp), &readfds);
+
+        FD_ZERO(&fds);
+        max_s = 0;
+
+        /* set connected socket to fds */
+        for (i = 0; i < REQUEST_MAX_NUM; i++) {
+            sockfd = requests[i].socket;
+            if(!sockfd) continue;
+            if(sockfd > max_s) max_s = sockfd;
+
+            FD_SET(sockfd, &fds);
+            fprintf(stderr, "socket (%d)%d is set\n", i+1, sockfd);
         }
-        if (select(client_fd+1, &readfds, NULL, NULL, NULL) < 0) {
-            exit(EXIT_FAILURE);
+
+        if (!max_s) {
+            fprintf(stderr, "no more existing socket\n");
+            break;
         }
 
-        /* readline */
-        if (gSc == 1) {
-
-            len = readline(fileno(fp), msg_buf, sizeof(msg_buf));
-            if (len < 0) exit(1);
-
-            msg_buf[len - 1] = 13;
-            msg_buf[len] = 10;
-
-            msg_buf[len + 1] = '\0';
-            /* print command read from file */
-            write_content_at(index, wrap_html(msg_buf), 0);
-            //printf("%s", msg_buf);
+        // select
+        activity = select(max_s+1, &fds, NULL, NULL, &timeout);
+        if( (activity<0) && (errno!=EINTR) ) {
+            error("select");
+        } else if( activity == 0 ) {
+            fprintf(stdout, "timeout\n");
             fflush(stdout);
-            if (write(client_fd, msg_buf, len+1) == -1) {
-                return;
-            }
-
-            gSc = 0;
+            break;
         }
 
-        /* close */
-        if (FD_ISSET(client_fd, &readfds)) {
-            int errnum;
-            errnum = recv_msg(index, client_fd);
-            if (errnum < 0) {
-                shutdown(client_fd, 2);
-                close(client_fd);
-                exit(1);
-            } else if (errnum == 0) {
-                shutdown(client_fd, 2);
-                close(client_fd);
-                exit(0);
+        for (i = 0; i < REQUEST_MAX_NUM; i++) {
+
+            sockfd = requests[i].socket;
+            if (!sockfd) continue;
+            if (!FD_ISSET(sockfd, &fds)) continue;
+
+            /* read from sockfd */
+            bzero(buf, BUFSIZE);
+            n = read(sockfd, buf, BUFSIZE);
+
+            /* close */
+            if (n <= 0) {
+                fprintf(stderr, "close socket (%d): %d\n", i+1, sockfd);
+                close(sockfd);
+                requests[i].socket = 0;
+                fclose(requests[i].fp);
+                FD_CLR(sockfd, &fds);
+            }
+            write_content_at(i, wrap_html(buf), 0);
+
+            //printf("<p>Read from server(%d):<br />%s***END***<br /></p>", i+1, wrap_html(buf));
+
+            /* if prompt arrive then write command from file to remote host */
+            if (contain_prompt()) {
+//                 fprintf(stdout, "prompt");
+//                 fflush(stdout);
+
+                write_command_next(i);
             }
         }
-    } // end of while
+    }
 }
 
 void clients_handler()
@@ -152,6 +186,8 @@ void clients_handler()
         }
 
         /* connect */
-        new_connection(i);
+        setup_connection(i);
     }
+
+    serve_connection();
 }

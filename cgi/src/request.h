@@ -12,7 +12,7 @@ typedef struct {
     char *ip;
     char *port;
     char *filename;
-    char *socket;
+    int socket;
     FILE *fp;
 } Request;
 
