@@ -23,7 +23,6 @@ void setup_connection(int index)
     }
 
     /* get server */
-    char buf[BUFSIZE];
     server = gethostbyname(requests[index].ip);
     if (server == NULL) {
         fprintf(stderr,"ERROR, no such host");
@@ -77,12 +76,13 @@ void setup_connection(int index)
 /* return 1 if contain prompt else return 0 */
 int contain_prompt() {
     int i;
-    for( i=0 ; i<strlen(buf) ; i++ ) {
+    for(i=0 ; i < strlen(buf) ; i++) {
         if(buf[i] == '%')   return 1;
     }
     return 0;
 }
 
+/* read a line from file and then write it to remote host */
 void write_command_next(int index) {
 
     int n;
@@ -94,11 +94,12 @@ void write_command_next(int index) {
     write_content_at(index, wrap_html(buf), 0);
 
     if(buf[0] == '\n')  return;
-    fprintf(stderr, "%s(%d)\n", buf, (int)strlen(buf));
+    fprintf(stderr, "%s[%d]\n", buf, (int)strlen(buf));
     n = write(requests[index].socket, buf, strlen(buf));
     if(n < 0)   error("ERROR writing to socket");
 }
 
+/* serve all the connection established in setup phase */
 void serve_connection()
 {
     int i, sockfd, max_s, n;
@@ -106,8 +107,8 @@ void serve_connection()
     struct timeval timeout; // second, microsecs
     fd_set fds;
 
-    timeout.tv_sec = 2;
-    timeout.tv_usec = 500000;
+    timeout.tv_sec = 50;
+    timeout.tv_usec = 0;
 
     while(1) {
 
@@ -121,7 +122,7 @@ void serve_connection()
             if(sockfd > max_s) max_s = sockfd;
 
             FD_SET(sockfd, &fds);
-            fprintf(stderr, "socket (%d)%d is set\n", i+1, sockfd);
+            fprintf(stderr, "socket[%d]=%d is set\n", i+1, sockfd);
         }
 
         if (!max_s) {
@@ -129,9 +130,9 @@ void serve_connection()
             break;
         }
 
-        // select
+        /* use select to monitor connections */
         activity = select(max_s+1, &fds, NULL, NULL, &timeout);
-        if( (activity<0) && (errno!=EINTR) ) {
+        if( (activity < 0) && (errno!=EINTR) ) {
             error("select");
         } else if( activity == 0 ) {
             fprintf(stdout, "timeout\n");
@@ -151,7 +152,7 @@ void serve_connection()
 
             /* close */
             if (n <= 0) {
-                fprintf(stderr, "close socket (%d): %d\n", i+1, sockfd);
+                fprintf(stderr, "close socket[%d]=%d\n", i+1, sockfd);
                 close(sockfd);
                 requests[i].socket = 0;
                 fclose(requests[i].fp);
@@ -159,12 +160,8 @@ void serve_connection()
             }
             write_content_at(i, wrap_html(buf), 0);
 
-            //printf("<p>Read from server(%d):<br />%s***END***<br /></p>", i+1, wrap_html(buf));
-
             /* if prompt arrive then write command from file to remote host */
             if (contain_prompt()) {
-//                 fprintf(stdout, "prompt");
-//                 fflush(stdout);
 
                 write_command_next(i);
             }
@@ -175,15 +172,11 @@ void serve_connection()
 void clients_handler()
 {
     int i = 0;
-    char buf[300];
 
     for(i = 0; i < REQUEST_MAX_NUM; i++) {
         Request r = requests[i];
-        if (!(r.ip && r.port)) continue;
-        if (r.port == NULL) {
-            strcpy(buf, "wrong ip<br>");
-            write_content_at(i, buf, 0);
-        }
+        /* if one of each ip/port filename is empty then forget it */
+        if (!(r.ip && r.port && r.filename)) continue;
 
         /* connect */
         setup_connection(i);
