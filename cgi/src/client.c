@@ -55,7 +55,7 @@ void setup_connection(int index)
     strcat(filepath, requests[index].filename);
     requests[index].fp = fopen(filepath, "r");
     if (requests[index].fp == NULL) {
-        fprintf(stdout, "open file");
+        fprintf(stderr, "open file");
         exit(EXIT_FAILURE);
     }
 
@@ -107,7 +107,7 @@ void serve_connection()
     struct timeval timeout; // second, microsecs
     fd_set fds;
 
-    timeout.tv_sec = 50;
+    timeout.tv_sec = 100;
     timeout.tv_usec = 0;
 
     while(1) {
@@ -135,8 +135,7 @@ void serve_connection()
         if( (activity < 0) && (errno!=EINTR) ) {
             error("select");
         } else if( activity == 0 ) {
-            fprintf(stdout, "timeout\n");
-            fflush(stdout);
+            fprintf(stderr, "timeout\n");
             break;
         }
 
