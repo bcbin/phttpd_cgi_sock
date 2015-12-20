@@ -31,11 +31,11 @@ void parse_params(char *params, Request *request)
     if (DEBUG)
         fprintf(stderr, "request qs=%s\n", qs);
 
-    if (!qs) return;
+    if (!qs) {
+        setenv2("QUERY_STRING", "");
+        return;
+    }
     setenv2("QUERY_STRING", qs);
-// BUG
-//     strncpy(request->query_string, qs, strlen(qs));
-//     request->query_string[1000] = '\0';
 }
 
 /* parse the extension with the given filename

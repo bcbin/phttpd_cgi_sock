@@ -24,7 +24,7 @@ int main(int argc, const char *argv[])
     /* Listen */
     Listen(listenfd, LISTENQ);
 
-    log_info("Start listen on port %d", servaddr.sin_port);
+    log_info("Start listen on port %d", SERV_PORT);
 
     for( ; ; ) {
         clilen = sizeof(cliaddr);

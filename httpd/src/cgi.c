@@ -92,8 +92,14 @@ int cgi_handler(int connfd, Request *request)
 
     /* parse request_method and remote_addr */
     parse_request_method(buf, request);
-    //setenv2("REQUEST_METHOD", request->request_method);
     setenv2("REMOTE_ADDR", request->remote_addr);
+
+    /* set arbitrary env for cgi program */
+    setenv2("SCRIPT_NAME", "/~0453411/public_html/");
+    setenv2("REMOTE_HOST", "nplinux2.cs.nctu.edu.tw");
+    setenv2("AUTH_TYPE", "normal");
+    setenv2("REMOTE_USER", "guest");
+    setenv2("REMOTE_IDENT", "unknown");
 
     /* parse program path */
     parse_params(params, request);
@@ -105,7 +111,6 @@ int cgi_handler(int connfd, Request *request)
         fprintf(stderr, "Content-Length=%s\n", content_length);
         // fprintf(stderr, "request_method=%s\n", request->request_method);
         fprintf(stderr, "params=%s\n", params);
-        // fprintf(stderr, "request qs=%s\n", request->query_string);
         fprintf(stderr, "============================= END ========================\n");
     }
 
