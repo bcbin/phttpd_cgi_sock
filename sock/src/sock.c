@@ -5,14 +5,27 @@
 #define IP_LENGTH      20
 #define PORT_LENGTH    10
 
+typedef struct sock {
+    unsigned char VN;
+    unsigned char CD;
+    unsigned short DST_PORT;
+    unsigned int DST_IP;
+    // char* USER_ID;
+} __attribute__((packed)) Sock;
+
 /* debug */
 void print_packet(char* buf, int size)
 {
     int i;
     for(i = 0; i < size; i++) {
-        fprintf(stderr, "%x ", buf[i]);
+        fprintf(stderr, "%x ", buf[i] & BYTE);
     }
     fprintf(stderr, "\n");
+}
+
+int deny_access()
+{
+    return -1;
 }
 
 char *get_port_str(char *buf)
@@ -65,15 +78,30 @@ int connectTCP(char *ip, char *port)
     return sockfd;
 }
 
-int deny_access()
+/* Establish a passive tcp connection using a random port
+ * pass port as value result argument and return psock if success */
+int passiveTCP(unsigned short *port)
 {
-    return -1;
-}
+    int listenfd;
+    socklen_t addrlen = sizeof(struct sockaddr);
+    struct sockaddr_in servaddr;
 
-int passiveTCP()
-{
+    listenfd = Socket(AF_INET, SOCK_STREAM, 0);
 
-    return 0;
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_port = htons(0);      /* important!! */
+
+    SetReuseSock(listenfd);
+    Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
+
+    getsockname(listenfd, (struct sockaddr *) &servaddr, &addrlen); // -> network byte order
+    *port = servaddr.sin_port;
+
+    Listen(listenfd, BACKLOG);
+
+    return listenfd;
 }
 
 void redirect_socket_data(int ssock, int rsock)
@@ -114,8 +142,8 @@ void redirect_socket_data(int ssock, int rsock)
         }
     }
 
-    close(ssock);
-    close(rsock);
+    Close(ssock);
+    Close(rsock);
 }
 
 void proxy_handler(int sockfd)
@@ -157,9 +185,9 @@ void proxy_handler(int sockfd)
         }
 
         /* SOCK4 reply */
-        print_packet(write_buf, WRITE_BUF_SIZE);
+        //print_packet(write_buf, WRITE_BUF_SIZE);
         if (write(sockfd, write_buf, WRITE_BUF_SIZE) < 0){
-            log_err("sock reply error");
+            log_err("sock(connect) reply error");
         }
 
         redirect_socket_data(sockfd, rsock);
@@ -170,12 +198,33 @@ void proxy_handler(int sockfd)
     {
         fprintf(stderr, "CD=2 BIND\n");
 
-        passiveTCP();
+        unsigned short port;
+        psock = passiveTCP(&port);
+        fprintf(stderr, "passive psock=%d port = %d\n", psock, port);
+        port = ntohs(port);
 
         /* fill sock write packet */
         write_buf[0] = 0;
         write_buf[1] = (unsigned char) 90; // 90 for granted 91 for reject
+        write_buf[2] = port / 256;
+        write_buf[3] = port % 256;
+        for(i = 4; i < WRITE_BUF_SIZE; i++) {
+            write_buf[i] = 0;
+        }
 
+        print_packet(write_buf, WRITE_BUF_SIZE);
+        Writen(sockfd, write_buf, WRITE_BUF_SIZE);
+
+        struct sockaddr_in servaddr;
+        socklen_t addrlen = sizeof(servaddr);
+        rsock = Accept(psock, (SA *) &servaddr, &addrlen);
+        log_info("rsock=%d", rsock);
+
+        Close(psock);
+
+        Writen(sockfd, write_buf, WRITE_BUF_SIZE);
+
+        redirect_socket_data(sockfd, rsock);
         //fprintf(stderr, "grant/non-grant\n");
     }
 }
@@ -200,7 +249,7 @@ int main(int argc, const char *argv[])
 
     log_info("Start listen on port %d", SERV_PORT);
 
-    // nonblock signal child
+    /* nonblock signal child */
     signal(SIGCHLD, SIG_IGN);
 
     for(;;) {
