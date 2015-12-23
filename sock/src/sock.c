@@ -1,18 +1,18 @@
 #include "unp.h"
 
 #define WRITE_BUF_SIZE 8
-#define BYTE        0x000000FF
+#define BYTE           0x000000FF
 #define IP_LENGTH      20
 #define PORT_LENGTH    10
-
-char buf[BUF_SIZE];
 
 /* debug */
 void print_packet(char* buf, int size)
 {
-    for(int i = 0; i < size; i++) {
-        printf("%x ", buf[i]);
+    int i;
+    for(i = 0; i < size; i++) {
+        fprintf(stderr, "%x ", buf[i]);
     }
+    fprintf(stderr, "\n");
 }
 
 char *get_port_str(char *buf)
@@ -34,24 +34,94 @@ char *get_ip_str(char *buf)
     return temp;
 }
 
-int connect_tcp()
+/* return connected socket if success, return 0 if fail */
+int connectTCP(char *ip, char *port)
 {
+    int sockfd;
+    struct sockaddr_in serveraddr;
+    struct hostent *server;
 
+    /* create the socket */
+    sockfd = Socket(AF_INET, SOCK_STREAM, 0);
+
+    /* get server */
+    server = gethostbyname(ip);
+    if (server == NULL) {
+        log_err("no such server");
+        return 0;
+    }
+
+    /* setup socket */
+    bzero((char *) &serveraddr, sizeof(serveraddr));
+    serveraddr.sin_family = AF_INET;
+    bcopy((char *)server->h_addr, (char *)&serveraddr.sin_addr.s_addr, server->h_length);
+    serveraddr.sin_port = htons(atoi(port));
+
+    if (connect(sockfd, (struct sockaddr *)&serveraddr,sizeof(serveraddr)) < 0) {
+        log_err("ERROR connecting");
+        return 0;
+    }
+
+    return sockfd;
+}
+
+int deny_access()
+{
+    return -1;
+}
+
+int passiveTCP()
+{
     return 0;
 }
 
-int passive_tcp()
+void redirect_socket_data(int ssock, int rsock)
 {
-    return 0;
+    fd_set fds, rfds;
+    int max_fd = 10;
+    char buf[BUF_SIZE];
+
+    FD_ZERO(&fds);
+    FD_SET(ssock, &fds);
+    FD_SET(rsock, &fds);
+
+    while(1) {
+        rfds = fds;
+        Select(max_fd, &rfds, NULL, NULL, NULL);
+
+        // client pass chunks
+        if (FD_ISSET(ssock, &rfds)) {
+            ssize_t n = Read(ssock, buf, BUF_SIZE);
+            if (n > 0) {
+                Writen(rsock, buf, n);
+            } else {
+                break;
+            }
+        }
+        // remote pass chunks
+        else if (FD_ISSET(rsock, &rfds)) {
+            ssize_t n = Read(rsock, buf, BUF_SIZE);
+            if (n > 0) {
+                Writen(ssock, buf, n);
+            } else {
+                break;
+            }
+        }
+    }
+
+    close(ssock);
+    close(rsock);
 }
 
 void proxy_handler(int sockfd)
 {
-    int i;
+    int i,
+        rsock,      /* connect mode */
+        psock;      /* bind mode */
     char read_buf[BUF_SIZE],
          write_buf[BUF_SIZE];
 
-    ssize_t n = Read(sockfd, read_buf, BUF_SIZE);
+    Read(sockfd, read_buf, BUF_SIZE);
 
     /* extract info from SOCK request packet */
     unsigned char VN = read_buf[0];
@@ -69,16 +139,24 @@ void proxy_handler(int sockfd)
 
         write_buf[0] = 0;
         write_buf[1] = (unsigned char) 90; // 90 for granted 91 for reject
-        for (i = 0; i < 7; i++) {
+        for (i = 2; i < 7; i++) {
             /* reference to read_buf */
             write_buf[i] = read_buf[i];
         }
 
-        //print_packet(write_buf, strlen(write_buf));
-        Write(sockfd, write_buf, WRITE_BUF_SIZE);
+        rsock = connectTCP(ip, port);   /* connect to remote server */
+        if (rsock <= 0) {
+            perror("connect error\n");
+            exit(EXIT_FAILURE);
+        }
 
-        connect_tcp();
+        /* SOCK4 reply */
+        print_packet(write_buf, WRITE_BUF_SIZE);
+        if (write(sockfd, write_buf, WRITE_BUF_SIZE) < 0){
+            log_err("sock reply error");
+        }
 
+        redirect_socket_data(sockfd, rsock);
         //fprintf(stderr, "grant/non-grant\n");
     }
     /* bind mode */

@@ -4,6 +4,7 @@
 
 #include <sys/socket.h>
 #include <netinet/in.h> /* sockaddr_in{} and other Internet defns */
+#include <netdb.h>
 #include <arpa/inet.h>  /* inet(3) functions */
 #include <sys/wait.h>
 #include <sys/stat.h>
@@ -56,6 +57,7 @@ void Close(int fd);
 void Unlink(const char *pathname);
 void Execl(const char *path, char *arg);
 ssize_t Read(int fd, void *ptr, size_t nbytes);
+void Writen(int fd, void *ptr, size_t nbytes);
 void *Malloc(size_t size);
 void Pipe(int *fds);
 pid_t Fork(void);
