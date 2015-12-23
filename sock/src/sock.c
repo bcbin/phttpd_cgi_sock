@@ -72,12 +72,17 @@ int deny_access()
 
 int passiveTCP()
 {
+
     return 0;
 }
 
 void redirect_socket_data(int ssock, int rsock)
 {
     fd_set fds, rfds;
+    struct timeval timeout;     // second, microsecs
+    timeout.tv_sec = 120;
+    timeout.tv_usec = 0;
+
     int max_fd = 10;
     char buf[BUF_SIZE];
 
@@ -87,7 +92,7 @@ void redirect_socket_data(int ssock, int rsock)
 
     while(1) {
         rfds = fds;
-        Select(max_fd, &rfds, NULL, NULL, NULL);
+        Select(max_fd, &rfds, NULL, NULL, &timeout);
 
         // client pass chunks
         if (FD_ISSET(ssock, &rfds)) {
@@ -137,6 +142,7 @@ void proxy_handler(int sockfd)
     {
         fprintf(stderr, "CD=1 CONNECT\n");
 
+        /* fill sock write packet */
         write_buf[0] = 0;
         write_buf[1] = (unsigned char) 90; // 90 for granted 91 for reject
         for (i = 2; i < 7; i++) {
@@ -162,9 +168,15 @@ void proxy_handler(int sockfd)
     /* bind mode */
     else if (CD == 2)
     {
-        log_info("SOCKS_BIND");
+        fprintf(stderr, "CD=2 BIND\n");
 
-        fprintf(stderr, "grant/non-grant\n");
+        passiveTCP();
+
+        /* fill sock write packet */
+        write_buf[0] = 0;
+        write_buf[1] = (unsigned char) 90; // 90 for granted 91 for reject
+
+        //fprintf(stderr, "grant/non-grant\n");
     }
 }
 
@@ -187,6 +199,9 @@ int main(int argc, const char *argv[])
     Listen(listenfd, BACKLOG);
 
     log_info("Start listen on port %d", SERV_PORT);
+
+    // nonblock signal child
+    signal(SIGCHLD, SIG_IGN);
 
     for(;;) {
         clilen = sizeof(cliaddr);
