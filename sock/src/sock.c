@@ -23,9 +23,39 @@ void print_packet(char* buf, int size)
     fprintf(stderr, "\n");
 }
 
-int deny_access()
+/* return 1 if deny, 0 to pass */
+int deny_access(char *ip)
 {
-    return -1;
+    int i = 0;
+    FILE *fp;
+    char buf[255], rule[20], rule_ip[20];
+
+    /* if sock.conf doesn't exist then don't deny */
+    if (!(fp = fopen("sock.conf", "r"))) {
+        return 0;
+    }
+
+    while(fgets(buf, 255, fp)) {
+        sscanf(buf, "%s %s", rule, rule_ip);
+//         fprintf(stderr, "rule=%s\n", rule);
+//         fprintf(stderr, "rule_ip=%s\n", rule_ip);
+        if (strcmp(rule, "permit") != 0) {
+            fprintf(stderr, "deny_access\n");
+            return 1;
+        }
+
+        for(i = 0; i < strlen(rule_ip); i++) {
+            //fprintf(stderr, "ip[%d]=%c, rule_ip[%d]=%c\n", i, ip[i], i, rule_ip[i]);
+            if (rule_ip[i] != ip[i]) {
+                fprintf(stderr, "deny_access\n");
+                return 1;
+            }
+        }
+    }
+
+    fclose(fp);
+
+    return 0;
 }
 
 char *get_port_str(char *buf)
@@ -104,6 +134,7 @@ int passiveTCP(unsigned short *port)
     return listenfd;
 }
 
+/* redirect socket data to sock and remote sock */
 void redirect_socket_data(int ssock, int rsock)
 {
     fd_set fds, rfds;
@@ -178,6 +209,12 @@ void proxy_handler(int sockfd)
             write_buf[i] = read_buf[i];
         }
 
+        if (deny_access(ip)) {
+            write_buf[1] = (unsigned char) 91;
+            Writen(sockfd, write_buf, WRITE_BUF_SIZE);
+            exit(EXIT_SUCCESS);
+        }
+
         rsock = connectTCP(ip, port);   /* connect to remote server */
         if (rsock <= 0) {
             perror("connect error\n");
@@ -186,12 +223,10 @@ void proxy_handler(int sockfd)
 
         /* SOCK4 reply */
         //print_packet(write_buf, WRITE_BUF_SIZE);
-        if (write(sockfd, write_buf, WRITE_BUF_SIZE) < 0){
-            log_err("sock(connect) reply error");
-        }
+        Writen(sockfd, write_buf, WRITE_BUF_SIZE);
 
         redirect_socket_data(sockfd, rsock);
-        //fprintf(stderr, "grant/non-grant\n");
+        //fprintf(stderr, "grant\n");
     }
     /* bind mode */
     else if (CD == 2)
@@ -206,26 +241,31 @@ void proxy_handler(int sockfd)
         /* fill sock write packet */
         write_buf[0] = 0;
         write_buf[1] = (unsigned char) 90; // 90 for granted 91 for reject
+        if (deny_access(ip)) {
+            write_buf[1] = (unsigned char) 91;
+            Writen(sockfd, write_buf, WRITE_BUF_SIZE);
+            fprintf(stderr, "non-grant\n");
+            exit(EXIT_SUCCESS);
+        }
         write_buf[2] = port / 256;
         write_buf[3] = port % 256;
         for(i = 4; i < WRITE_BUF_SIZE; i++) {
             write_buf[i] = 0;
         }
 
-        print_packet(write_buf, WRITE_BUF_SIZE);
+        //print_packet(write_buf, WRITE_BUF_SIZE);
         Writen(sockfd, write_buf, WRITE_BUF_SIZE);
 
         struct sockaddr_in servaddr;
         socklen_t addrlen = sizeof(servaddr);
         rsock = Accept(psock, (SA *) &servaddr, &addrlen);
-        log_info("rsock=%d", rsock);
 
         Close(psock);
 
         Writen(sockfd, write_buf, WRITE_BUF_SIZE);
 
         redirect_socket_data(sockfd, rsock);
-        //fprintf(stderr, "grant/non-grant\n");
+        //fprintf(stderr, "grant\n");
     }
 }
 
