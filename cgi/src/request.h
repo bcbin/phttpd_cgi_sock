@@ -16,4 +16,8 @@ typedef struct {
     FILE *fp;
 } Request;
 
+typedef struct {
+    Request request;
+} Sock;
+
 #endif

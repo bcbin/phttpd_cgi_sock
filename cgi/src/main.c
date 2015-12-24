@@ -8,6 +8,7 @@
 #include "client.h"
 
 Request requests[REQUEST_MAX_NUM];
+Sock sock_req[REQUEST_MAX_NUM];
 
 /* debug */
 
@@ -16,8 +17,12 @@ void print_requests_info()
     int i = 0;
     for(i = 0; i < REQUEST_MAX_NUM; i++) {
         requests[i].socket = 0;
+        sock_req[i].request.socket = 0;
+
         printf("requests[%d] ip=%s port=%s filename=%s<br>",
             i+1, requests[i].ip, requests[i].port, requests[i].filename);
+        printf("sock_req[%d] ip=%s port=%s filename=%s<br>",
+            i+1, sock_req[i].request.ip, sock_req[i].request.port, sock_req[i].request.filename);
     }
 }
 
@@ -33,6 +38,10 @@ void request_iterator()
     for(i = 0; i < REQUEST_MAX_NUM; i++) {
         if (!(requests[i].ip && requests[i].port)) continue;
         serve_request_at(i);
+    }
+    for(i = 0; i < REQUEST_MAX_NUM; i++) {
+        if (!(sock_req[i].request.ip && sock_req[i].request.port)) continue;
+        //serve_request_at(i);
     }
 }
 
@@ -52,7 +61,7 @@ int main(int argc, const char *argv[])
 
     if (query) {
         parse_query_string(query);
-        //print_requests_info();
+        print_requests_info();
 
         request_iterator();
         clients_handler();

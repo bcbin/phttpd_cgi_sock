@@ -59,18 +59,18 @@ void setup_connection(int index)
         exit(EXIT_FAILURE);
     }
 
-    if (DEBUG) {
-        /* print cwd */
-        printf("filepath=%s\n", filepath);
-        char buff[100], *dir;
-        dir = getcwd(buff, 100);
-        printf("dir=%s", dir);
+//     if (DEBUG) {
+//         /* print cwd */
+//         printf("filepath=%s\n", filepath);
+//         char buff[100], *dir;
+//         dir = getcwd(buff, 100);
+//         printf("dir=%s", dir);
 
         /* print socket, fp */
         printf("request[%d] socket=%d, fp=%d<br>",
                 index, requests[index].socket, fileno(requests[index].fp));
         fflush(stdout);
-    }
+//     }
 }
 
 /* return 1 if contain prompt else return 0 */

@@ -107,4 +107,6 @@ char *wrap_html(char *source)
     result = str_replace(result, ">", "&gt;");
     result = str_replace(result, "\r\n", "\n");
     result = str_replace(result, "\n", "<br>");
+
+    return result;
 }

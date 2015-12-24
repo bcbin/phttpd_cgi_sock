@@ -1,5 +1,5 @@
 # project name (generate executable with this name)
-TARGET   = hw3.cgi
+TARGET   = hw4.cgi
 
 CC       = gcc
 # compiling flags here
