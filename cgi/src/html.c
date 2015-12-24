@@ -71,7 +71,7 @@ char *str_replace(char *orig, char *rep, char *with)
     len_with = strlen(with);
 
     ins = orig;
-    for (count = 0; tmp = strstr(ins, rep); ++count) {
+    for (count = 0; (tmp = strstr(ins, rep)) != NULL; ++count) {
         ins = tmp + len_rep;
     }
 

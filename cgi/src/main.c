@@ -2,7 +2,6 @@
 #include <stdlib.h>
 #include "dbg.h"
 #include "parser.h"
-#include "list.h"
 #include "request.h"
 #include "html.h"
 #include "client.h"
