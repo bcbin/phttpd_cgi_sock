@@ -174,8 +174,12 @@ void clients_handler()
 
     for(i = 0; i < REQUEST_MAX_NUM; i++) {
         Request r = requests[i];
-        /* if one of each ip/port filename is empty then forget it */
-        if (!(r.ip && r.port && r.filename)) continue;
+        /* if one of ip/port/filename is empty then forget it */
+        if (!(r.ip && r.port && r.filename)) {
+            fprintf(stderr, "[INPUT ERROR] request[%d] ip=%s port=%s filename=%s\n",
+                    i, r.ip, r.port, r.filename);
+            continue;
+        }
 
         /* connect */
         setup_connection(i);
