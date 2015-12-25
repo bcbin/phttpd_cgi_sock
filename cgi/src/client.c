@@ -29,7 +29,7 @@ void setup_connection(int index)
 
         // TODO: hostname
         strcpy(buf, "wrong hostname<br />");
-        write_content_at(index, buf, 0);
+        write_content_at(index, 'm', buf, 0);
 
         return;
     }
@@ -91,7 +91,7 @@ void write_command_next(int index) {
     if(!fgets(buf, BUFSIZE, requests[index].fp)) {
         error("fgets");
     }
-    write_content_at(index, wrap_html(buf), 0);
+    write_content_at(index, 'm', wrap_html(buf), 0);
 
     if(buf[0] == '\n')  return;
     fprintf(stderr, "%s[%d]\n", buf, (int)strlen(buf));
@@ -157,7 +157,7 @@ void serve_connection()
                 fclose(requests[i].fp);
                 FD_CLR(sockfd, &fds);
             }
-            write_content_at(i, wrap_html(buf), 0);
+            write_content_at(i, 'm', wrap_html(buf), 0);
 
             /* if prompt arrive then write command from file to remote host */
             if (contain_prompt()) {

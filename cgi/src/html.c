@@ -31,21 +31,21 @@ void write_head_at(int num, char *content) {
 }
 
 /* write html content at given section of server# */
-void write_content_at(int num, char *content, int bold) {
+void write_content_at(int num, char id, char *content, int bold) {
     if(bold) {
-        printf("<script>document.all('m%d').innerHTML += \"<b>%s</b>\";</script>", num, content);
+        printf("<script>document.all('%c%d').innerHTML += \"<b>%s</b>\";</script>", id, num, content);
     }
     else {
-        printf("<script>document.all('m%d').innerHTML += \"%s\";</script>", num, content);
+        printf("<script>document.all('%c%d').innerHTML += \"%s\";</script>", id, num, content);
     }
     fflush(stdout);
 }
 
-void write_content_init(int num) {
+void write_content_init(int num, char id) {
     printf("<script>\
             document.all('res_tr_content').innerHTML += \"\
-                <td id='m%d'></td>\";\
-            </script>", num);
+                <td id='%c%d'></td>\";\
+            </script>", id, num);
 
     fflush(stdout);
 }

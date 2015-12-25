@@ -25,7 +25,9 @@ void parse_key_value(char *token)
 
         if (value_tok) {
             requests[index].ip = malloc(REQUEST_HOST_SIZE);
+            sock_req[index].request.ip = malloc(REQUEST_FILENAME_SIZE);
             strcpy(requests[index].ip, value_tok);
+            strcpy(sock_req[index].request.ip, value_tok);
             //printf("value - %s<br>", requests[index].ip);
         }
     }
@@ -35,7 +37,9 @@ void parse_key_value(char *token)
 
         if (value_tok) {
             requests[index].port = malloc(REQUEST_PORT_SIZE);
+            sock_req[index].request.port = malloc(REQUEST_PORT_SIZE);
             strcpy(requests[index].port, value_tok);
+            strcpy(sock_req[index].request.port, value_tok);
             //printf("value - %s<br>", requests[index].port);
         }
     }
@@ -62,8 +66,8 @@ void parse_key_value(char *token)
             value_tok = strtok_r(NULL, "\0", &saveptr);
 
             if (value_tok) {
-                sock_req[index].request.ip = malloc(REQUEST_HOST_SIZE);
-                strcpy(sock_req[index].request.ip, value_tok);
+                sock_req[index].ip = malloc(REQUEST_HOST_SIZE);
+                strcpy(sock_req[index].ip, value_tok);
                 //printf("value - %s<br>", sock_req[index].request.ip);
             }
         }
@@ -72,8 +76,8 @@ void parse_key_value(char *token)
             value_tok = strtok_r(NULL, "\0", &saveptr);
 
             if (value_tok) {
-                sock_req[index].request.port = malloc(REQUEST_PORT_SIZE);
-                strcpy(sock_req[index].request.port, value_tok);
+                sock_req[index].port = malloc(REQUEST_PORT_SIZE);
+                strcpy(sock_req[index].port, value_tok);
                 //printf("value - %s<br>", sock_req[index].request.port);
             }
         }

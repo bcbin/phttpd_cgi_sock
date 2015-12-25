@@ -18,6 +18,8 @@ typedef struct {
 
 typedef struct {
     Request request;
+    char *ip;
+    char *port;
 } Sock;
 
 #endif

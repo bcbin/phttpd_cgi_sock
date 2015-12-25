@@ -20,15 +20,16 @@ void print_requests_info()
 
         printf("requests[%d] ip=%s port=%s filename=%s<br>",
             i+1, requests[i].ip, requests[i].port, requests[i].filename);
-        printf("sock_req[%d] ip=%s port=%s filename=%s<br>",
-            i+1, sock_req[i].request.ip, sock_req[i].request.port, sock_req[i].request.filename);
+        printf("sock_req[%d] ip=%s port=%s filename=%s sock_ip=%s sock_port=%s<br>",
+            i+1, sock_req[i].request.ip, sock_req[i].request.port, sock_req[i].request.filename,
+            sock_req[i].ip, sock_req[i].port);
     }
 }
 
-void serve_request_at(int num) {
-
+void serve_request_at(int num)
+{
     write_head_at(num, requests[num].ip);
-    write_content_init(num);
+    write_content_init(num, 'm');
 }
 
 void request_iterator()
