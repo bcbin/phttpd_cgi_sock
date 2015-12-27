@@ -17,12 +17,12 @@ void setup_connection(int index)
     }
 
     /* get server */
-    server = gethostbyname(requests[index].ip);
+    server = gethostbyname(requests[index].sock_ip);
     if (server == NULL) {
-        fprintf(stderr,"error, no such host");
+        fprintf(stderr,"error, no such sock host");
 
         // TODO: hostname
-        strcpy(buf, "wrong hostname<br />");
+        strcpy(buf, "wrong hostname(sock)<br />");
         write_content_at(index, 'm', buf, 0);
 
         return;
@@ -31,13 +31,40 @@ void setup_connection(int index)
     /* setup socket */
     bzero((char *) &serveraddr, sizeof(serveraddr));
     serveraddr.sin_family = AF_INET;
-    bcopy((char *)server->h_addr, (char *)&serveraddr.sin_addr.s_addr, server->h_length);
-    serveraddr.sin_port = htons(atoi(requests[index].port));
+    bcopy((char *)server->h_addr, (char *)&serveraddr.sin_addr.s_addr, server->h_length); // copy from param1 -> param2
+    serveraddr.sin_port = htons(atoi(requests[index].sock_port));
 
     /* connect: create a connection with the server */
     if (connect(sockfd, (struct sockaddr *)&serveraddr,sizeof(serveraddr)) < 0) {
-        log_err("error connecting");
+        log_err("connect to sock server");
         return;
+    }
+
+    /* send SOCKS4 request */
+    char package[8];
+    struct hostent *sh;
+    package[0] = 4;
+    package[1] = 1;
+    package[2] = atoi(requests[index].port) / 256;
+    package[3] = atoi(requests[index].port) % 256;
+    sh = gethostbyname(requests[index].sock_ip);
+    fprintf(stderr, "sh->> %u\n", (unsigned char)sh->h_addr_list[0][0]);
+    fprintf(stderr, "sh->> %u\n", (unsigned char)sh->h_addr_list[0][1]);
+    fprintf(stderr, "sh->> %u\n", (unsigned char)sh->h_addr_list[0][2]);
+    fprintf(stderr, "sh->> %u\n", (unsigned char)sh->h_addr_list[0][3]);
+    package[4] = (unsigned char)sh->h_addr_list[0][0];
+    package[5] = (unsigned char)sh->h_addr_list[0][1];
+    package[6] = (unsigned char)sh->h_addr_list[0][2];
+    package[7] = (unsigned char)sh->h_addr_list[0][3];
+
+    Writen(sockfd, package, sizeof(package));
+
+    if( read(sockfd, package, sizeof(package)) <0 ) {
+        perror("read sock reply error");
+    }
+
+    if( package[1] == 91 ) {
+        perror("sock return error");
     }
 
     /* save socket */

@@ -222,7 +222,7 @@ void proxy_handler(int sockfd)
         }
 
         /* SOCK4 reply */
-        //print_packet(write_buf, WRITE_BUF_SIZE);
+        print_packet(write_buf, WRITE_BUF_SIZE);
         Writen(sockfd, write_buf, WRITE_BUF_SIZE);
 
         redirect_socket_data(sockfd, rsock);
