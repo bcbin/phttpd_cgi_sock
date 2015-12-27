@@ -143,7 +143,8 @@ void redirect_socket_data(int ssock, int rsock)
     timeout.tv_usec = 0;
 
     int max_fd = 10;
-    char buf[BUF_SIZE];
+    char buf[BUF_SIZE],
+         chunk[10];
 
     FD_ZERO(&fds);
     FD_SET(ssock, &fds);
@@ -156,8 +157,13 @@ void redirect_socket_data(int ssock, int rsock)
         // client pass chunks
         if (FD_ISSET(ssock, &rfds)) {
             ssize_t n = Read(ssock, buf, BUF_SIZE);
+            strncpy(chunk, buf, 10);
+            chunk[9] = '\0';
             if (n > 0) {
                 Writen(rsock, buf, n);
+
+                /* print 10 bytes of buffer */
+                fprintf(stderr, "%s ...", chunk);
             } else {
                 break;
             }
@@ -173,11 +179,12 @@ void redirect_socket_data(int ssock, int rsock)
         }
     }
 
+    fprintf(stderr, "\n");
     Close(ssock);
     Close(rsock);
 }
 
-void proxy_handler(int sockfd)
+void proxy_handler(int sockfd, struct sockaddr_in cliaddr)
 {
     int i,
         rsock,      /* connect mode */
@@ -192,15 +199,14 @@ void proxy_handler(int sockfd)
     unsigned char CD = read_buf[1];
     char *port = get_port_str(read_buf);
     char *ip = get_ip_str(read_buf);
-    char *USER_ID = read_buf + 8;
+    char *USER_ID = *(read_buf+8) ? read_buf+8 : "NONE";
 
-    fprintf(stderr, "VN: %d, CD: %d, IP: %s, PORT: %s\n", VN, CD, ip, port);
+    fprintf(stderr, "VN: %d, CD: %d, DST IP: %s, DST PORT: %s, USERID: %s\n",
+            VN, CD, ip, port, USER_ID);
 
     /* connect mode */
     if (CD == 1)
     {
-        fprintf(stderr, "CD=1 CONNECT\n");
-
         /* fill sock write packet */
         write_buf[0] = 0;
         write_buf[1] = (unsigned char) 90; // 90 for granted 91 for reject
@@ -212,7 +218,17 @@ void proxy_handler(int sockfd)
         if (deny_access(ip)) {
             write_buf[1] = (unsigned char) 91;
             Writen(sockfd, write_buf, WRITE_BUF_SIZE);
+            fprintf(stderr, "SOCK_CONNECT REJECTED ...\n");
             exit(EXIT_SUCCESS);
+        } else {
+            fprintf(stderr, "Permit Src = %d.%d.%d.%d(%u), Dst = %s(%s)\n",
+                    (cliaddr.sin_addr.s_addr&0xFF),
+                    ((cliaddr.sin_addr.s_addr&0xFF00)>>8),
+                    ((cliaddr.sin_addr.s_addr&0xFF0000)>>16),
+                    ((cliaddr.sin_addr.s_addr&0xFF000000)>>24),
+                    cliaddr.sin_port,
+                    ip, port);
+            fprintf(stderr, "SOCK_CONNECT GRANTED ...\n");
         }
 
         rsock = connectTCP(ip, port);   /* connect to remote server */
@@ -227,16 +243,13 @@ void proxy_handler(int sockfd)
         Writen(sockfd, write_buf, WRITE_BUF_SIZE);
 
         redirect_socket_data(sockfd, rsock);
-        //fprintf(stderr, "grant\n");
     }
     /* bind mode */
     else if (CD == 2)
     {
-        fprintf(stderr, "CD=2 BIND\n");
-
         unsigned short port;
         psock = passiveTCP(&port);
-        fprintf(stderr, "passive psock=%d port = %d\n", psock, port);
+        //fprintf(stderr, "passive psock=%d port = %d\n", psock, port);
         port = ntohs(port);
 
         /* fill sock write packet */
@@ -245,8 +258,17 @@ void proxy_handler(int sockfd)
         if (deny_access(ip)) {
             write_buf[1] = (unsigned char) 91;
             Writen(sockfd, write_buf, WRITE_BUF_SIZE);
-            fprintf(stderr, "non-grant\n");
+            fprintf(stderr, "SOCK_BIND REJECTED ...\n");
             exit(EXIT_SUCCESS);
+        } else {
+            fprintf(stderr, "Permit Src = %d.%d.%d.%d(%u), Dst = %s(%d)\n",
+                    (cliaddr.sin_addr.s_addr&0xFF),
+                    ((cliaddr.sin_addr.s_addr&0xFF00)>>8),
+                    ((cliaddr.sin_addr.s_addr&0xFF0000)>>16),
+                    ((cliaddr.sin_addr.s_addr&0xFF000000)>>24),
+                    cliaddr.sin_port,
+                    ip, htons(port));
+            fprintf(stderr, "SOCK_BIND GRANTED ...\n");
         }
         write_buf[2] = port / 256;
         write_buf[3] = port % 256;
@@ -268,7 +290,6 @@ void proxy_handler(int sockfd)
         Writen(sockfd, write_buf, WRITE_BUF_SIZE);
 
         redirect_socket_data(sockfd, rsock);
-        //fprintf(stderr, "grant\n");
     }
 }
 
@@ -304,7 +325,7 @@ int main(int argc, const char *argv[])
 
         if (pid == 0) {
 
-            proxy_handler(connfd);
+            proxy_handler(connfd, cliaddr);
 
             exit(EXIT_SUCCESS);
 
