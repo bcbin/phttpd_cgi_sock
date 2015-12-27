@@ -24,6 +24,9 @@ int main(int argc, const char *argv[])
     /* Listen */
     Listen(listenfd, LISTENQ);
 
+    /* nonblock signal child */
+    signal(SIGCHLD, SIG_IGN);
+
     log_info("Start listen on port %d", SERV_PORT);
 
     for( ; ; ) {
