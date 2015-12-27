@@ -36,21 +36,10 @@ void setup_connection(int index)
     struct hostent *server;
 
     /* create the socket */
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-    if (sockfd < 0) {
-        log_err("opening socket");
-    }
+    sockfd = Socket(AF_INET, SOCK_STREAM, 0);
 
     /* get server */
-    server = gethostbyname(requests[index].sock_ip);
-    if (server == NULL) {
-        fprintf(stderr,"error, no such sock host");
-
-        strcpy(buf, "wrong hostname(sock)<br />");
-        write_content_at(index, 'm', buf, 0);
-
-        return;
-    }
+    server = Gethostbyname(requests[index].sock_ip);
 
     /* setup socket */
     bzero((char *) &serveraddr, sizeof(serveraddr));
@@ -75,17 +64,18 @@ void setup_connection(int index)
 }
 
 /* return 1 if contain prompt else return 0 */
-int contain_prompt() {
+int contain_prompt()
+{
     int i;
-    for(i=0 ; i < strlen(buf) ; i++) {
+    for(i = 0; i < strlen(buf); i++) {
         if(buf[i] == '%')   return 1;
     }
     return 0;
 }
 
 /* read a line from file and then write it to remote host */
-void write_command_next(int index) {
-
+void write_command_next(int index)
+{
     int n;
 
     /* read a line from file */
@@ -105,7 +95,6 @@ void write_command_next(int index) {
 void serve_connection()
 {
     int i, sockfd, max_s, n;
-    int activity;
     struct timeval timeout; // second, microsecs
     fd_set fds;
 
@@ -129,18 +118,12 @@ void serve_connection()
         }
 
         if (!max_s) {
-            fprintf(stderr, "no more existing socket\n");
+            log_warn("No more existing socket\n");
             break;
         }
 
         /* use select to monitor connections */
-        activity = select(max_s+1, &fds, NULL, NULL, &timeout);
-        if( (activity < 0) && (errno!=EINTR) ) {
-            log_err("select");
-        } else if( activity == 0 ) {
-            fprintf(stderr, "timeout\n");
-            break;
-        }
+        Select(max_s+1, &fds, NULL, NULL, &timeout);
 
         for (i = 0; i < REQUEST_MAX_NUM; i++) {
 
