@@ -1,5 +1,7 @@
 #include "html.h"
 
+Request requests[REQUEST_MAX_NUM];
+
 /* print html head and init body */
 void html_init() {
     char *content = "<html> \
@@ -23,6 +25,12 @@ void html_init() {
 void html_end() {
     char *content = "</body></html>";
     printf("%s", content);
+}
+
+void serve_request_at(int num, char id)
+{
+    write_head_at(num, requests[num].ip);
+    write_content_init(num, id);
 }
 
 /* write head at a given section of server# */

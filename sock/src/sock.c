@@ -222,7 +222,8 @@ void proxy_handler(int sockfd)
         }
 
         /* SOCK4 reply */
-        print_packet(write_buf, WRITE_BUF_SIZE);
+        if (DEBUG)
+            print_packet(write_buf, WRITE_BUF_SIZE);
         Writen(sockfd, write_buf, WRITE_BUF_SIZE);
 
         redirect_socket_data(sockfd, rsock);
@@ -253,7 +254,9 @@ void proxy_handler(int sockfd)
             write_buf[i] = 0;
         }
 
-        //print_packet(write_buf, WRITE_BUF_SIZE);
+        if (DEBUG)
+            print_packet(write_buf, WRITE_BUF_SIZE);
+
         Writen(sockfd, write_buf, WRITE_BUF_SIZE);
 
         struct sockaddr_in servaddr;

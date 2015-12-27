@@ -6,6 +6,17 @@
 #include "writen.h"
 #include "dbg.h"
 
-void sock_request(int connfd);
+#define BUF_SIZE 10000
+#define SOCK_REQUEST_SIZE
+
+// typedef struct sock {
+//     unsigned char VN;
+//     unsigned char CD;
+//     unsigned short DST_PORT;
+//     unsigned int DST_IP;
+//     // char *USER_ID;
+// } __attribute__((packed)) Sock;
+
+int send_sock_request(int connfd, int index);
 
 #endif

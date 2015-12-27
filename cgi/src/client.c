@@ -1,7 +1,32 @@
 #include "client.h"
 
-#define BUFSIZE 1000
 char buf[BUFSIZE];
+
+void save_request_fileptr(int index)
+{
+    /* open and store fp */
+    char filepath[FILE_PATH_SIZE];
+    strcpy(filepath, FILE_PATH);         // should check the path if program break
+    strcat(filepath, requests[index].filename);
+    requests[index].fp = fopen(filepath, "r");
+    if (requests[index].fp == NULL) {
+        fprintf(stderr, "open file");
+        exit(EXIT_FAILURE);
+    }
+
+    if (DEBUG) {
+        /* print cwd */
+        printf("filepath=%s\n", filepath);
+        char buff[100], *dir;
+        dir = getcwd(buff, 100);
+        printf("dir=%s", dir);
+
+        /* print socket, fp */
+        printf("request[%d] socket=%d, fp=%d<br>",
+                index, requests[index].socket, fileno(requests[index].fp));
+        fflush(stdout);
+    }
+}
 
 /* setup connection by given index of requests */
 void setup_connection(int index)
@@ -21,7 +46,6 @@ void setup_connection(int index)
     if (server == NULL) {
         fprintf(stderr,"error, no such sock host");
 
-        // TODO: hostname
         strcpy(buf, "wrong hostname(sock)<br />");
         write_content_at(index, 'm', buf, 0);
 
@@ -41,57 +65,13 @@ void setup_connection(int index)
     }
 
     /* send SOCKS4 request */
-    char package[8];
-    struct hostent *sh;
-    package[0] = 4;
-    package[1] = 1;
-    package[2] = atoi(requests[index].port) / 256;
-    package[3] = atoi(requests[index].port) % 256;
-    sh = gethostbyname(requests[index].sock_ip);
-    fprintf(stderr, "sh->> %u\n", (unsigned char)sh->h_addr_list[0][0]);
-    fprintf(stderr, "sh->> %u\n", (unsigned char)sh->h_addr_list[0][1]);
-    fprintf(stderr, "sh->> %u\n", (unsigned char)sh->h_addr_list[0][2]);
-    fprintf(stderr, "sh->> %u\n", (unsigned char)sh->h_addr_list[0][3]);
-    package[4] = (unsigned char)sh->h_addr_list[0][0];
-    package[5] = (unsigned char)sh->h_addr_list[0][1];
-    package[6] = (unsigned char)sh->h_addr_list[0][2];
-    package[7] = (unsigned char)sh->h_addr_list[0][3];
-
-    Writen(sockfd, package, sizeof(package));
-
-    if( read(sockfd, package, sizeof(package)) <0 ) {
-        perror("read sock reply error");
-    }
-
-    if( package[1] == 91 ) {
-        perror("sock return error");
+    if (send_sock_request(sockfd, index)) {
+        log_err("send sock request");
+        return;
     }
 
     /* save socket */
     requests[index].socket = sockfd;
-
-    /* open and store fp */
-    char filepath[100];
-    strcpy(filepath, "../www/test/");               // should check the path if program break
-    strcat(filepath, requests[index].filename);
-    requests[index].fp = fopen(filepath, "r");
-    if (requests[index].fp == NULL) {
-        fprintf(stderr, "open file");
-        exit(EXIT_FAILURE);
-    }
-
-//     if (DEBUG) {
-//         /* print cwd */
-//         printf("filepath=%s\n", filepath);
-//         char buff[100], *dir;
-//         dir = getcwd(buff, 100);
-//         printf("dir=%s", dir);
-
-        /* print socket, fp */
-        printf("request[%d] socket=%d, fp=%d<br>",
-                index, requests[index].socket, fileno(requests[index].fp));
-        fflush(stdout);
-//     }
 }
 
 /* return 1 if contain prompt else return 0 */
