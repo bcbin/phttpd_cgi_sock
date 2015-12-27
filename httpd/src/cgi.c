@@ -124,7 +124,7 @@ int cgi_handler(int connfd, Request *request)
 
         case HTML:
             strcat(root, params);
-            fprintf(stderr, "html root=%s", root);
+            //fprintf(stderr, "html root=%s", root);
 
             /* read file into buf */
             if (readfile_into_buf(root, buf) == -1) {
@@ -141,7 +141,7 @@ int cgi_handler(int connfd, Request *request)
         default:
             /* request with other extentions */
             strcat(root, params);
-            fprintf(stderr, "html root=%s", root);
+            //fprintf(stderr, "html root=%s", root);
 
             /* read file into buf */
             if (readfile_into_buf(root, buf) == -1) {

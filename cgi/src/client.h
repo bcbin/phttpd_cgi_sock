@@ -11,6 +11,7 @@
 #include "dbg.h"
 #include "request.h"
 #include "html.h"
+#include "sock.h"
 
 extern Request requests[REQUEST_MAX_NUM];
 

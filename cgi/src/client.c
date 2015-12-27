@@ -3,12 +3,6 @@
 #define BUFSIZE 1000
 char buf[BUFSIZE];
 
-/* Tool Function */
-void error(char *msg) {
-    perror(msg);
-    exit(EXIT_FAILURE);
-}
-
 /* setup connection by given index of requests */
 void setup_connection(int index)
 {
@@ -19,13 +13,13 @@ void setup_connection(int index)
     /* create the socket */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) {
-        error("ERROR opening socket");
+        log_err("opening socket");
     }
 
     /* get server */
     server = gethostbyname(requests[index].ip);
     if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host");
+        fprintf(stderr,"error, no such host");
 
         // TODO: hostname
         strcpy(buf, "wrong hostname<br />");
@@ -42,7 +36,7 @@ void setup_connection(int index)
 
     /* connect: create a connection with the server */
     if (connect(sockfd, (struct sockaddr *)&serveraddr,sizeof(serveraddr)) < 0) {
-        error("ERROR connecting");
+        log_err("error connecting");
         return;
     }
 
@@ -89,14 +83,15 @@ void write_command_next(int index) {
 
     /* read a line from file */
     if(!fgets(buf, BUFSIZE, requests[index].fp)) {
-        error("fgets");
+        log_err("fgets");
     }
     write_content_at(index, 'm', wrap_html(buf), 0);
 
     if(buf[0] == '\n')  return;
-    fprintf(stderr, "%s[%d]\n", buf, (int)strlen(buf));
+    if (DEBUG)
+        fprintf(stderr, "%s[%d]\n", buf, (int)strlen(buf));
     n = write(requests[index].socket, buf, strlen(buf));
-    if(n < 0)   error("ERROR writing to socket");
+    if(n < 0)   log_err("error writing to socket");
 }
 
 /* serve all the connection established in setup phase */
@@ -122,7 +117,8 @@ void serve_connection()
             if(sockfd > max_s) max_s = sockfd;
 
             FD_SET(sockfd, &fds);
-            fprintf(stderr, "socket[%d]=%d is set\n", i+1, sockfd);
+            if (DEBUG)
+                fprintf(stderr, "socket[%d]=%d is set\n", i+1, sockfd);
         }
 
         if (!max_s) {
@@ -133,7 +129,7 @@ void serve_connection()
         /* use select to monitor connections */
         activity = select(max_s+1, &fds, NULL, NULL, &timeout);
         if( (activity < 0) && (errno!=EINTR) ) {
-            error("select");
+            log_err("select");
         } else if( activity == 0 ) {
             fprintf(stderr, "timeout\n");
             break;
@@ -176,12 +172,11 @@ void clients_handler()
         Request r = requests[i];
         /* if one of ip/port/filename is empty then forget it */
         if (!(r.ip && r.port && r.filename)) {
-            fprintf(stderr, "[INPUT ERROR] request[%d] ip=%s port=%s filename=%s\n",
+            log_warn("request[%d] ip=%s port=%s filename=%s\n",
                     i, r.ip, r.port, r.filename);
             continue;
         }
 
-        /* connect */
         setup_connection(i);
     }
 

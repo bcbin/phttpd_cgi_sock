@@ -59,7 +59,7 @@ int main(int argc, const char *argv[])
         clients_handler();
 
     } else {
-        fprintf(stderr, "Empty query string.");
+        log_warn("Empty query string.");
     }
 
     html_end();
