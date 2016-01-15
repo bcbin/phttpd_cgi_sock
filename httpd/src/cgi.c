@@ -82,29 +82,33 @@ void cgi_exec(int connfd, char *path, Request *request)
 
 int cgi_handler(int connfd, Request *request)
 {
+    int read_size;
     char buf[BUF_SIZE], params[BUF_SIZE];
-    //Read(connfd, buf, BUF_SIZE);
+    memset(buf, 0, BUF_SIZE);
+    read_size = recv(connfd, buf, BUF_SIZE, 0);
 
     /* set content_length */
     char *content_length = Malloc(sizeof(ssize_t));
-//     sprintf(content_length, "%ld", strlen(buf));
-//     setenv2("CONTENT_LENGTH", content_length);
-// 
-//     /* parse request_method and remote_addr */
-//     parse_request_method(buf, request);
-//     setenv2("REMOTE_ADDR", request->remote_addr);
-// 
-//     /* set arbitrary env for cgi program */
-//     setenv2("SCRIPT_NAME", "/~0453411/public_html/");
-//     setenv2("REMOTE_HOST", "nplinux2.cs.nctu.edu.tw");
-//     setenv2("AUTH_TYPE", "normal");
-//     setenv2("REMOTE_USER", "guest");
-//     setenv2("REMOTE_IDENT", "unknown");
-// 
-//     /* parse program path */
-//     parse_params(params, request);
-//     char root[50] = "../www/";
-// 
+    sprintf(content_length, "%d", read_size);
+    Write(connfd, buf, BUF_SIZE);
+    setenv2("CONTENT_LENGTH", content_length);
+
+    /* parse request_method and remote_addr */
+    parse_request_method(buf, request);
+    setenv2("REMOTE_ADDR", request->remote_addr);
+    log_info("remote_addr=%s", request->remote_addr);
+
+    /* set arbitrary env for cgi program */
+    setenv2("SCRIPT_NAME", "/~0453411/public_html/");
+    setenv2("REMOTE_HOST", "nplinux2.cs.nctu.edu.tw");
+    setenv2("AUTH_TYPE", "normal");
+    setenv2("REMOTE_USER", "guest");
+    setenv2("REMOTE_IDENT", "unknown");
+
+    /* parse program path */
+    // parse_params(params, request);
+    //char root[50] = "../www/";
+
 //     if (DEBUG) {
 //         //fprintf(stderr, "%s\n", buf);
 //         fprintf(stderr, "\n==================== PARSE RESULT ======================\n");
@@ -113,8 +117,8 @@ int cgi_handler(int connfd, Request *request)
 //         fprintf(stderr, "params=%s\n", params);
 //         fprintf(stderr, "============================= END ========================\n");
 //     }
-// 
-// 
+
+
 //     switch (parse_extension(params)) {
 //         case CGI:
 //             strcat(root, params);
@@ -154,6 +158,6 @@ int cgi_handler(int connfd, Request *request)
 //             Write(connfd, buf, strlen(buf));
 //     }
 // 
-    //Close(connfd);
+    // Close(connfd);
     return 0;
 }

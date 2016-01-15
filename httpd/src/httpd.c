@@ -9,8 +9,10 @@ static void *
 doit(void *arg)
 {
     int connfd;
+    int read_size;
     struct sockaddr_in cliaddr;
     Connection conn;
+    char *message, client_message[2000];
 
     conn = *((Connection *) arg);
     connfd = conn.connfd;
@@ -22,6 +24,20 @@ doit(void *arg)
     Request *request = Malloc(sizeof(request));
     strcpy(request->remote_addr, inet_ntoa(cliaddr.sin_addr));
     cgi_handler(connfd, request);
+
+//     message = "Now type something and i shall repeat what you type \n";
+//     write(connfd , message , strlen(message));
+// 
+//     while( (read_size = recv(connfd, client_message, 2000, 0)) > 0)
+//     {
+//     	client_message[read_size] = '\0';
+// 
+// 		//Send the message back to client
+//         write(connfd , client_message , strlen(client_message));
+// 
+// 		//clear the message buffer
+// 		memset(client_message, 0, 2000);
+//     }
 
     pthread_detach(pthread_self());
     Close(connfd);
