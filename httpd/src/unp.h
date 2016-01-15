@@ -55,6 +55,7 @@ void Bind(int, const SA *, socklen_t);
 void Listen(int fd, int backlog);
 int Accept(int fd, struct sockaddr *sa, socklen_t *salenptr);
 void Socket_Message(int connfd, char *send_buff);
+int tcp_listen();
 
 // unix
 void Write(int fd, void *ptr, size_t nbytes);

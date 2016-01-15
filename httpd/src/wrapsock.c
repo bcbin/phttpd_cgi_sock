@@ -75,3 +75,27 @@ Socket_Message(int connfd, char *send_buff)
     snprintf(send_buff, 20, "Invalid Inputs.\n");
     Write(connfd, send_buff, strlen(send_buff));
 }
+
+/* Listen and bind a blockinng tcp socket */
+int tcp_listen()
+{
+    int     listenfd;
+    struct sockaddr_in servaddr;
+
+    /* Listen */
+    listenfd = Socket(AF_INET, SOCK_STREAM, 0);
+
+    /* Bind and set socket option */
+    memset(&servaddr, 0, sizeof(servaddr));
+    servaddr.sin_family = AF_INET;
+    servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
+    servaddr.sin_port = htons(SERV_PORT);
+
+    SetReuseSock(listenfd);
+    Bind(listenfd, (SA *) &servaddr, sizeof(servaddr));
+
+    /* Listen */
+    Listen(listenfd, LISTENQ);
+
+	return listenfd;
+}
