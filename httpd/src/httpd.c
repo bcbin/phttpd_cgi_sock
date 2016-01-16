@@ -1,71 +1,82 @@
 #include "unp.h"
 
+int     listenfd;
+
 typedef struct _conn {
+    pthread_t thread_tid;
     int connfd;
     struct sockaddr_in cliaddr;
 } Connection;
+Connection *conns;
 
 pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
 
-static void *
-run(void *arg)
+static void * thread_main(void *arg)
 {
-    int connfd;
+    int i = *((int *) arg);
+    socklen_t clilen;
     struct sockaddr_in cliaddr;
-    Connection conn;
 
-    conn = *((Connection *) arg);
-    connfd = conn.connfd;
-    cliaddr = conn.cliaddr;
+    printf("thread %d starting\n", i);
+    for (;;) {
+        clilen = sizeof(cliaddr);
 
-    /* print client ip and port */
-    log_info("connfd=%d, ip=%u.%u.%u.%u(port=%d)",
-            connfd,
-            cliaddr.sin_addr.s_addr & 0xFF,
-            (cliaddr.sin_addr.s_addr & 0xFF00) >> 8,
-            (cliaddr.sin_addr.s_addr & 0xFF0000) >> 16,
-            (cliaddr.sin_addr.s_addr & 0xFF000000) >> 24,
-            cliaddr.sin_port);
+        pthread_mutex_lock(&mlock);
+        conns[i].connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
+        pthread_mutex_unlock(&mlock);
+
+        /* print client ip and port */
+        log_info("thread_id=%d, connfd=%d, ip=%u.%u.%u.%u (%d)",
+                i, conns[i].connfd,
+                cliaddr.sin_addr.s_addr & 0xFF,
+                (cliaddr.sin_addr.s_addr & 0xFF00) >> 8,
+                (cliaddr.sin_addr.s_addr & 0xFF0000) >> 16,
+                (cliaddr.sin_addr.s_addr & 0xFF000000) >> 24,
+                cliaddr.sin_port);
+
+        conns[i].cliaddr = cliaddr;
+
+        Request *request = Malloc(sizeof(request));
+        strcpy(request->remote_addr, inet_ntoa(cliaddr.sin_addr));
+        cgi_handler(conns[i].connfd, request);
+
+        Close(conns[i].connfd);
+    }
 
     free(arg);
+}
 
-    Request *request = Malloc(sizeof(request));
-    strcpy(request->remote_addr, inet_ntoa(cliaddr.sin_addr));
-    cgi_handler(connfd, request);
+void thread_make(int i)
+{
+    int *iptr = Malloc(sizeof(int));
+    *iptr = i;
 
-    pthread_detach(pthread_self());
-    Close(connfd);
-    return (NULL);
+    pthread_create(&conns[i].thread_tid, NULL, &thread_main, iptr);
+    return;
 }
 
 int main(int argc, const char *argv[])
 {
-    int     listenfd;
-    Connection  *conn;
-    pthread_t tid;
-    socklen_t clilen;
-    struct sockaddr_in cliaddr;
+    int     i;
+    int     nthreads = 20;
 
     /* all init work */
     signal_init();
 
 	listenfd = tcp_listen();
 
-    /* nonblock signal child */
-    signal(SIGCHLD, SIG_IGN);
-
     log_info("Start listen on port %d", SERV_PORT);
 
+    conns = calloc(nthreads, sizeof(Connection));
+
+    log_info("Create a thread pool with %d threads", nthreads);
+    for (i = 0; i < nthreads; i++) {
+        thread_make(i);
+    }
+
+    //signal(SIGINT, sig_int);
     for(;;) {
-        conn = Malloc(sizeof(Connection));
-        clilen = sizeof(cliaddr);
-
-        pthread_mutex_lock(&mlock);
-        conn->connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
-        pthread_mutex_unlock(&mlock);
-
-        conn->cliaddr = cliaddr;
-        pthread_create(&tid, NULL, &run, conn);
+        pause();
     }
 
     /* should never go here */

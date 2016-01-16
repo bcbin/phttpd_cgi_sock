@@ -19,7 +19,7 @@ void catch_interrupt(int i)
 void signal_init()
 {
     /* detect child termination */
-    //signal(SIGCHLD, catch_child);
+    signal(SIGCHLD, catch_child);
 
     /* ctrl callback */
     signal(SIGINT, catch_interrupt);
