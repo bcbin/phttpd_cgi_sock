@@ -44,6 +44,7 @@ static void * thread_main(void *arg)
     }
 
     free(arg);
+    return 0;
 }
 
 void thread_make(int i)
