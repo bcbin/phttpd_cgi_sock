@@ -14,6 +14,8 @@ typedef struct {
     char *filename;
     int socket;
     FILE *fp;
+    char *sock_ip;
+    char *sock_port;
 } Request;
 
 #endif

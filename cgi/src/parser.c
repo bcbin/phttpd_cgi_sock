@@ -7,7 +7,8 @@ void parse_key_value(char *token)
     int index = 0;
     char *value_tok,
          *saveptr,
-         capital;
+         capital,
+         second;
 
     /* get key */
     value_tok = strtok_r(token, "=", &saveptr);
@@ -45,6 +46,33 @@ void parse_key_value(char *token)
             requests[index].filename = malloc(REQUEST_FILENAME_SIZE);
             strcpy(requests[index].filename, value_tok);
             //printf("value - %s<br>", requests[index].filename);
+        }
+    }
+    else if (capital == 's') {
+
+        sscanf(value_tok, "%c%c%d", &capital, &second, &index);
+        index--;
+        //printf("capital: %c, second: %c\n", capital, second);
+
+        if (second == 'h') {
+
+            value_tok = strtok_r(NULL, "\0", &saveptr);
+
+            if (value_tok) {
+                requests[index].sock_ip = malloc(REQUEST_HOST_SIZE);
+                strcpy(requests[index].sock_ip, value_tok);
+                //printf("value - %s<br>", sock_req[index].request.ip);
+            }
+        }
+        else if (second == 'p') {
+
+            value_tok = strtok_r(NULL, "\0", &saveptr);
+
+            if (value_tok) {
+                requests[index].sock_port = malloc(REQUEST_PORT_SIZE);
+                strcpy(requests[index].sock_port, value_tok);
+                //printf("value - %s<br>", sock_req[index].request.port);
+            }
         }
     }
 

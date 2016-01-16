@@ -1,5 +1,7 @@
 #include "html.h"
 
+Request requests[REQUEST_MAX_NUM];
+
 /* print html head and init body */
 void html_init() {
     char *content = "<html> \
@@ -25,27 +27,33 @@ void html_end() {
     printf("%s", content);
 }
 
+void serve_request_at(int num, char id)
+{
+    write_head_at(num, requests[num].ip);
+    write_content_init(num, id);
+}
+
 /* write head at a given section of server# */
 void write_head_at(int num, char *content) {
     printf("<script>document.all['res_tr_head'].innerHTML += \"<td>%s</td>\";</script>", content);
 }
 
 /* write html content at given section of server# */
-void write_content_at(int num, char *content, int bold) {
+void write_content_at(int num, char id, char *content, int bold) {
     if(bold) {
-        printf("<script>document.all('m%d').innerHTML += \"<b>%s</b>\";</script>", num, content);
+        printf("<script>document.all('%c%d').innerHTML += \"<b>%s</b>\";</script>", id, num, content);
     }
     else {
-        printf("<script>document.all('m%d').innerHTML += \"%s\";</script>", num, content);
+        printf("<script>document.all('%c%d').innerHTML += \"%s\";</script>", id, num, content);
     }
     fflush(stdout);
 }
 
-void write_content_init(int num) {
+void write_content_init(int num, char id) {
     printf("<script>\
             document.all('res_tr_content').innerHTML += \"\
-                <td id='m%d'></td>\";\
-            </script>", num);
+                <td id='%c%d'></td>\";\
+            </script>", id, num);
 
     fflush(stdout);
 }
@@ -71,7 +79,7 @@ char *str_replace(char *orig, char *rep, char *with)
     len_with = strlen(with);
 
     ins = orig;
-    for (count = 0; tmp = strstr(ins, rep); ++count) {
+    for (count = 0; (tmp = strstr(ins, rep)) != NULL; ++count) {
         ins = tmp + len_rep;
     }
 
@@ -107,4 +115,6 @@ char *wrap_html(char *source)
     result = str_replace(result, ">", "&gt;");
     result = str_replace(result, "\r\n", "\n");
     result = str_replace(result, "\n", "<br>");
+
+    return result;
 }

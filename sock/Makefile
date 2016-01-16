@@ -1,5 +1,4 @@
-# project name (generate executable with this name)
-TARGET   = hw4.cgi
+TARGET   = sock
 
 CC       = gcc
 # compiling flags here
@@ -12,7 +11,7 @@ LFLAGS   = -Wall -I. -lm
 # change these to set the proper directories where each files shoould be
 SRCDIR   = src
 OBJDIR   = obj
-BINDIR   = ../www/
+BINDIR   = bin
 
 SOURCES  := $(wildcard $(SRCDIR)/*.c)
 INCLUDES := $(wildcard $(SRCDIR)/*.h)
@@ -21,8 +20,8 @@ rm       = rm -f
 
 
 $(BINDIR)/$(TARGET): $(OBJECTS)
+	ctags $(SOURCES) $(INCLUDES)
 	@$(LINKER) $@ $(LFLAGS) $(OBJECTS)
-	ctags $(SOURCES)
 	@echo "Linking complete!"
 
 $(OBJECTS): $(OBJDIR)/%.o : $(SRCDIR)/%.c
