@@ -5,6 +5,8 @@ typedef struct _conn {
     struct sockaddr_in cliaddr;
 } Connection;
 
+pthread_mutex_t mlock = PTHREAD_MUTEX_INITIALIZER;
+
 static void *
 run(void *arg)
 {
@@ -57,7 +59,11 @@ int main(int argc, const char *argv[])
     for(;;) {
         conn = Malloc(sizeof(Connection));
         clilen = sizeof(cliaddr);
+
+        pthread_mutex_lock(&mlock);
         conn->connfd = Accept(listenfd, (SA *) &cliaddr, &clilen);
+        pthread_mutex_unlock(&mlock);
+
         conn->cliaddr = cliaddr;
         pthread_create(&tid, NULL, &run, conn);
     }

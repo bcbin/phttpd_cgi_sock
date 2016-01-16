@@ -66,6 +66,13 @@ void cgi_exec(int connfd, char *path, Request *request)
         Dup2(connfd, STDIN_FILENO);
         Dup2(connfd, STDOUT_FILENO);
 
+        /* set arbitrary env for cgi program */
+        setenv2("SCRIPT_NAME", "/~0453411/public_html/");
+        setenv2("REMOTE_HOST", "nplinux2.cs.nctu.edu.tw");
+        setenv2("AUTH_TYPE", "normal");
+        setenv2("REMOTE_USER", "guest");
+        setenv2("REMOTE_IDENT", "unknown");
+
         if (execl(path, "", NULL) < 0) {
             write_bad_request(connfd);
         }
@@ -95,13 +102,6 @@ int cgi_handler(int connfd, Request *request)
 
     /* parse request_method and remote_addr */
     parse_request(buf, request, params);
-
-    /* set arbitrary env for cgi program */
-    setenv2("SCRIPT_NAME", "/~0453411/public_html/");
-    setenv2("REMOTE_HOST", "nplinux2.cs.nctu.edu.tw");
-    setenv2("AUTH_TYPE", "normal");
-    setenv2("REMOTE_USER", "guest");
-    setenv2("REMOTE_IDENT", "unknown");
 
     /* parse program path */
     char root[50] = "../www/";
