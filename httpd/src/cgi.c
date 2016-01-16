@@ -90,13 +90,11 @@ int cgi_handler(int connfd, Request *request)
     /* set content_length */
     char *content_length = Malloc(sizeof(ssize_t));
     sprintf(content_length, "%d", read_size);
-    Write(connfd, buf, BUF_SIZE);
     setenv2("CONTENT_LENGTH", content_length);
+    log_info("content_length=%s", content_length);
 
     /* parse request_method and remote_addr */
-    parse_request_method(buf, request);
-    setenv2("REMOTE_ADDR", request->remote_addr);
-    log_info("remote_addr=%s", request->remote_addr);
+    parse_request(buf, request, params);
 
     /* set arbitrary env for cgi program */
     setenv2("SCRIPT_NAME", "/~0453411/public_html/");
@@ -106,58 +104,58 @@ int cgi_handler(int connfd, Request *request)
     setenv2("REMOTE_IDENT", "unknown");
 
     /* parse program path */
-    // parse_params(params, request);
-    //char root[50] = "../www/";
+    char root[50] = "../www/";
 
-//     if (DEBUG) {
-//         //fprintf(stderr, "%s\n", buf);
-//         fprintf(stderr, "\n==================== PARSE RESULT ======================\n");
-//         fprintf(stderr, "Content-Length=%s\n", content_length);
-//         // fprintf(stderr, "request_method=%s\n", request->request_method);
-//         fprintf(stderr, "params=%s\n", params);
-//         fprintf(stderr, "============================= END ========================\n");
-//     }
+    if (DEBUG) {
+        fprintf(stderr, "%s\n", buf);
+        fprintf(stderr, "\n==================== PARSE RESULT ======================\n");
+        fprintf(stderr, "Content-Length=%s\n", content_length);
+        fprintf(stderr, "request_method=%s\n", request->request_method);
+        fprintf(stderr, "params=%s\n", params);
+        fprintf(stderr, "============================= END ========================\n");
+    }
 
 
-//     switch (parse_extension(params)) {
-//         case CGI:
-//             strcat(root, params);
-//             cgi_exec(connfd, root, request);
-// 
-//             break;
-// 
-//         case HTML:
-//             strcat(root, params);
-//             fprintf(stderr, "html root=%s", root);
-// 
-//             /* read file into buf */
-//             if (readfile_into_buf(root, buf) == -1) {
-//                 log_warn("html not found");
-//                 write_bad_request(connfd);
-//                 break;
-//             }
-// 
-//             write_html_header(connfd);
-//             Write(connfd, buf, strlen(buf));
-// 
-//             break;
-// 
-//         default:
-//             /* request with other extentions */
-//             strcat(root, params);
-//             fprintf(stderr, "html root=%s", root);
-// 
-//             /* read file into buf */
-//             if (readfile_into_buf(root, buf) == -1) {
-//                 log_warn("not found");
-//                 write_bad_request(connfd);
-//                 break;
-//             }
-// 
-//             write_html_header(connfd);
-//             Write(connfd, buf, strlen(buf));
-//     }
-// 
+    switch (parse_extension(params)) {
+        case CGI:
+            log_info("cgi");
+            strcat(root, params);
+            cgi_exec(connfd, root, request);
+
+            break;
+
+        case HTML:
+            strcat(root, params);
+            //log_info("html root=%s", root);
+
+            /* read file into buf */
+            if (readfile_into_buf(root, buf) == -1) {
+                log_warn("html not found");
+                write_bad_request(connfd);
+                break;
+            }
+
+            write_html_header(connfd);
+            Write(connfd, buf, strlen(buf));
+
+            break;
+
+        default:
+            /* request with other extentions */
+            strcat(root, params);
+            fprintf(stderr, "html root=%s", root);
+
+            /* read file into buf */
+            if (readfile_into_buf(root, buf) == -1) {
+                log_warn("not found");
+                write_bad_request(connfd);
+                break;
+            }
+
+            write_html_header(connfd);
+            Write(connfd, buf, strlen(buf));
+    }
+
     // Close(connfd);
     return 0;
 }

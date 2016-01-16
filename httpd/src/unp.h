@@ -5,6 +5,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h> /* sockaddr_in{} and other Internet defns */
 #include <arpa/inet.h>  /* inet(3) functions */
+#include <netdb.h>
 #include <sys/wait.h>
 #include <sys/stat.h>
 #include <sys/time.h>
@@ -90,8 +91,7 @@ void signal_init();
 int cgi_handler(int connfd, Request *request);
 
 // parse
-void parse_request_method(char *buf, Request *request);
-void parse_params(char *req, Request *request);
+void parse_request(char *buf, Request *request, char *params);
 int parse_extension(char *filename);
 
 #endif
